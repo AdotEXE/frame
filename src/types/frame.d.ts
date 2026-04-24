@@ -68,6 +68,41 @@ export interface CostSummary {
   lastActivity: number | null;
 }
 
+export interface ToolEvent {
+  id: string;
+  name: string;
+  inputPreview: string;
+  ts: number;
+}
+
+export interface SubagentInvocation {
+  id: string;
+  type: string;
+  description: string;
+  promptPreview: string;
+  status: 'inflight' | 'done';
+  startedAt: number;
+}
+
+export interface TaskAgent {
+  sessionId: string;
+  projectKey: string;
+  cwd: string;
+  fileMtime: number;
+  lastUserPrompt: string | null;
+  lastUserPromptAt: number | null;
+  inflightTool: ToolEvent | null;
+  recentTools: ToolEvent[];
+  subagents: SubagentInvocation[];
+  totalTurns: number;
+}
+
+export interface TasksSummary {
+  agents: TaskAgent[];
+  scannedAt: number;
+  windowHours: number;
+}
+
 export interface LockState {
   files: Array<{ path: string; sessionId: string; sinceMs: number }>;
 }

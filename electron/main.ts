@@ -8,6 +8,7 @@ import { Coordinator } from './coordinator.js';
 import { HookListener } from './hook-listener.js';
 import { FramePaths } from './paths.js';
 import { CostScanner } from './cost-scanner.js';
+import { TasksScanner } from './tasks-scanner.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -18,6 +19,7 @@ let video: VideoPipeline;
 let coordinator: Coordinator;
 let hookListener: HookListener;
 let cost: CostScanner;
+let tasks: TasksScanner;
 
 const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL;
 
@@ -47,7 +49,7 @@ function createWindow(): void {
 
   if (VITE_DEV_URL) {
     mainWindow.loadURL(VITE_DEV_URL);
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
+    // DevTools open on demand (F12 / Ctrl+Shift+I), not by default.
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
@@ -152,6 +154,9 @@ async function bootstrap(): Promise<void> {
 
   cost = new CostScanner();
   ipcMain.handle('cost:summary', (_e, hours?: number) => cost.summary(hours ?? 24));
+
+  tasks = new TasksScanner();
+  ipcMain.handle('tasks:summary', (_e, hours?: number) => tasks.summary(hours ?? 6));
 
   // ---- IPC: Misc ----
   ipcMain.handle('app:paths', () => FramePaths.all());

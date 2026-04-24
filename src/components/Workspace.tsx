@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { Sidebar } from './Sidebar';
 import { TabBar } from './TabBar';
-import { Terminal } from './Terminal';
+import { TerminalStage } from './TerminalStage';
 import { Dashboard } from './Dashboard';
 import { ScreenshotGallery } from './ScreenshotGallery';
 import { VideoPanel } from './VideoPanel';
 import { LocksPanel } from './LocksPanel';
+import { TasksPanel } from './TasksPanel';
 import { useWorkspace } from '../store/workspace';
 
 export function Workspace() {
   const sessions = useWorkspace((s) => s.sessions);
-  const activeId = useWorkspace((s) => s.activeSessionId);
   const panel = useWorkspace((s) => s.panel);
   const paths = useWorkspace((s) => s.paths);
   const createSession = useWorkspace((s) => s.createSession);
@@ -33,7 +34,7 @@ export function Workspace() {
         <div className="brand">
           <span className="brand-glyph">▍</span>
           <span className="brand-name">FRAME</span>
-          <span className="brand-tag">v0.2.1 — multi-session command bridge</span>
+          <span className="brand-tag">v0.2.2 — multi-session command bridge</span>
         </div>
         <div className="header-actions">
           <span className="status-dot ok" />
@@ -44,34 +45,30 @@ export function Workspace() {
       </header>
 
       <div className="frame-body">
-        <aside className="frame-sidebar">
-          <Sidebar />
-        </aside>
-
-        <main className="frame-main">
-          <TabBar />
-          <div className="terminal-stage">
-            {sessions.filter((s) => s.kind === 'pty').length === 0 && (
-              <div className="empty-stage">
-                <div className="empty-glyph">◇</div>
-                <div className="empty-title">no sessions yet</div>
-                <div className="empty-hint">spawn your first via the + tab</div>
-              </div>
-            )}
-            {sessions.filter((s) => s.kind === 'pty').map((s) => (
-              <div key={s.id} className={`terminal-host ${s.id === activeId ? 'active' : 'hidden'}`}>
-                <Terminal sessionId={s.id} />
-              </div>
-            ))}
-          </div>
-        </main>
-
-        <aside className="frame-rightpanel">
-          {panel === 'dashboard' && <Dashboard />}
-          {panel === 'screenshots' && <ScreenshotGallery />}
-          {panel === 'video' && <VideoPanel />}
-          {panel === 'locks' && <LocksPanel />}
-        </aside>
+        <PanelGroup direction="horizontal" autoSaveId="frame-outer">
+          <Panel defaultSize={5} minSize={3} maxSize={20} className="frame-sidebar-panel">
+            <aside className="frame-sidebar">
+              <Sidebar />
+            </aside>
+          </Panel>
+          <PanelResizeHandle className="ph ph-h" />
+          <Panel defaultSize={70} minSize={30}>
+            <main className="frame-main">
+              <TabBar />
+              <TerminalStage />
+            </main>
+          </Panel>
+          <PanelResizeHandle className="ph ph-h" />
+          <Panel defaultSize={25} minSize={15} maxSize={60}>
+            <aside className="frame-rightpanel">
+              {panel === 'dashboard' && <Dashboard />}
+              {panel === 'tasks' && <TasksPanel />}
+              {panel === 'screenshots' && <ScreenshotGallery />}
+              {panel === 'video' && <VideoPanel />}
+              {panel === 'locks' && <LocksPanel />}
+            </aside>
+          </Panel>
+        </PanelGroup>
       </div>
     </div>
   );

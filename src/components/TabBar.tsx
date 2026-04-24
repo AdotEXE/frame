@@ -1,4 +1,5 @@
 import { useWorkspace } from '../store/workspace';
+import { TAB_DRAG_TYPE } from './TerminalStage';
 
 export function TabBar() {
   const sessions = useWorkspace((s) => s.sessions);
@@ -22,13 +23,24 @@ export function TabBar() {
     await create({ cwd, label, cols: 120, rows: 32 });
   }
 
+  function onDragStart(e: React.DragEvent, sessionId: string) {
+    e.dataTransfer.setData(TAB_DRAG_TYPE, sessionId);
+    e.dataTransfer.effectAllowed = 'move';
+  }
+
   const ptySessions = sessions.filter((s) => s.kind === 'pty');
 
   return (
     <div className="tab-bar">
       {ptySessions.map((s) => (
-        <div key={s.id} className={`tab ${s.id === activeId ? 'active' : ''} status-${s.status}`}>
-          <button className="tab-main" onClick={() => setActive(s.id)} title={s.cwd}>
+        <div
+          key={s.id}
+          draggable
+          onDragStart={(e) => onDragStart(e, s.id)}
+          className={`tab ${s.id === activeId ? 'active' : ''} status-${s.status}`}
+          title={`${s.cwd}\n\ndrag → drop into terminal area to split`}
+        >
+          <button className="tab-main" onClick={() => setActive(s.id)}>
             <span className="tab-status-dot" />
             <span className="tab-label">{s.label}</span>
             {s.lastTool && <span className="tab-tool">{s.lastTool}</span>}

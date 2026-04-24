@@ -57,6 +57,9 @@ export const frameApi = {
       lastActivity: number | null;
     }>
   },
+  tasks: {
+    summary: (hours?: number) => ipcRenderer.invoke('tasks:summary', hours) as Promise<unknown>
+  },
   app: {
     paths: () => ipcRenderer.invoke('app:paths') as Promise<{ root: string; screenshots: string; videos: string; data: string }>,
     openFolder: () => ipcRenderer.invoke('app:open-folder') as Promise<string | null>,

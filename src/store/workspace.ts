@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ScreenshotEntry, SessionInfo, FrameHookEvent, VideoJob, LockState, CostSummary } from '../types/frame';
+import type { ScreenshotEntry, SessionInfo, FrameHookEvent, VideoJob, LockState, CostSummary, TasksSummary } from '../types/frame';
 
 interface WorkspaceState {
   sessions: SessionInfo[];
@@ -9,7 +9,8 @@ interface WorkspaceState {
   videoJobs: VideoJob[];
   locks: LockState;
   cost: CostSummary | null;
-  panel: 'dashboard' | 'screenshots' | 'video' | 'locks';
+  tasks: TasksSummary | null;
+  panel: 'dashboard' | 'screenshots' | 'video' | 'locks' | 'tasks';
   paths: { root: string; screenshots: string; videos: string; data: string } | null;
 
   init(): Promise<void>;
@@ -21,6 +22,7 @@ interface WorkspaceState {
   refreshVideoJobs(): Promise<void>;
   refreshLocks(): Promise<void>;
   refreshCost(hours?: number): Promise<void>;
+  refreshTasks(hours?: number): Promise<void>;
 }
 
 const STATUS_BUSY_MS = 4000;
@@ -33,6 +35,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   videoJobs: [],
   locks: { files: [] },
   cost: null,
+  tasks: null,
   panel: 'dashboard',
   paths: null,
 
@@ -94,12 +97,17 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       }, STATUS_BUSY_MS);
     });
 
-    await Promise.all([get().refreshScreenshots(), get().refreshVideoJobs(), get().refreshLocks(), get().refreshCost()]);
+    await Promise.all([get().refreshScreenshots(), get().refreshVideoJobs(), get().refreshLocks(), get().refreshCost(), get().refreshTasks()]);
 
     // Refresh cost periodically — Claude Code logs grow during sessions.
     const costTimer = setInterval(() => { void get().refreshCost(); }, 30_000);
+    // Tasks polled more often — that's the live "what is Claude doing" view.
+    const tasksTimer = setInterval(() => { void get().refreshTasks(); }, 2_000);
     if (typeof window !== 'undefined') {
-      window.addEventListener('beforeunload', () => clearInterval(costTimer));
+      window.addEventListener('beforeunload', () => {
+        clearInterval(costTimer);
+        clearInterval(tasksTimer);
+      });
     }
   },
 
@@ -153,5 +161,10 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   async refreshCost(hours = 24) {
     const summary = await window.frame.cost.summary(hours);
     set({ cost: summary });
+  },
+
+  async refreshTasks(hours = 6) {
+    const summary = await window.frame.tasks.summary(hours) as TasksSummary;
+    set({ tasks: summary });
   }
 }));
