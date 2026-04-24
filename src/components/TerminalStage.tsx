@@ -3,6 +3,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useWorkspace } from '../store/workspace';
 import { Terminal } from './Terminal';
 import type { SessionInfo } from '../types/frame';
+import { useFrameEvent } from '../lib/hotkeys';
 
 type SplitMode = 'single' | 'h' | 'v';
 type DropZone = 'right' | 'bottom' | null;
@@ -38,6 +39,24 @@ export function TerminalStage() {
       window.removeEventListener('drop', onEnd);
     };
   }, []);
+
+  // Hotkey-driven splits: pick another live session as pane B (or repeat active).
+  useFrameEvent('frame:split-right', () => {
+    if (ptySessions.length === 0) return;
+    const other = ptySessions.find((s) => s.id !== activeId) ?? ptySessions[0];
+    setPaneBId(other.id);
+    setSplitMode('h');
+  });
+  useFrameEvent('frame:split-down', () => {
+    if (ptySessions.length === 0) return;
+    const other = ptySessions.find((s) => s.id !== activeId) ?? ptySessions[0];
+    setPaneBId(other.id);
+    setSplitMode('v');
+  });
+  useFrameEvent('frame:split-close', () => {
+    setSplitMode('single');
+    setPaneBId(null);
+  });
 
   // Keep paneBId valid (session might have been killed).
   useEffect(() => {

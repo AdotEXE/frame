@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useWorkspace } from '../store/workspace';
 import type { TaskAgent, ToolEvent, SubagentInvocation, InternalTask } from '../types/frame';
 import { TypewriterText } from '../lib/typewriter';
+import { useFrameEvent } from '../lib/hotkeys';
 
 type ViewMode = 'cards' | 'list';
 const VIEW_KEY = 'frame.tasks.view';
@@ -32,6 +33,8 @@ export function TasksPanel() {
     const t = setInterval(() => setTick((x) => x + 1), 1000);
     return () => clearInterval(t);
   }, []);
+
+  useFrameEvent('frame:tasks-toggle-view', () => setView((v) => v === 'cards' ? 'list' : 'cards'));
 
   if (!tasks) return <div className="panel"><div className="muted">scanning task logs…</div></div>;
 
@@ -161,8 +164,10 @@ function Queue() {
   const remove = useWorkspace((s) => s.queueRemove);
   const [draft, setDraft] = useState('');
   const [showDone, setShowDone] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { void refresh(); }, [refresh]);
+  useFrameEvent('frame:queue-focus', () => inputRef.current?.focus());
 
   const visible = showDone ? queue : queue.filter((t) => t.status !== 'done');
   const pending = queue.filter((t) => t.status === 'pending').length;
@@ -192,8 +197,9 @@ function Queue() {
 
       <div className="queue-input">
         <input
+          ref={inputRef}
           className="queue-input-field"
-          placeholder="add task to queue (Enter)"
+          placeholder="add task to queue (Enter) · Ctrl+Q from anywhere"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') void submit(); }}

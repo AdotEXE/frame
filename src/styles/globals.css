@@ -998,6 +998,35 @@ input:focus { outline: none; border-color: var(--accent); }
 .hint-text { font-size: 10px; color: var(--fg-dim); line-height: 1.5; }
 .hint-text code { background: var(--bg-3); padding: 1px 4px; border-radius: 2px; color: var(--accent-2); }
 
+/* ============ STATUS BAR ============ */
+.frame-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 12px;
+  background: var(--bg-1);
+  border-top: 1px solid var(--line);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--fg-dim);
+  user-select: none;
+}
+
+.sb-cell { display: inline-flex; align-items: center; gap: 5px; }
+.sb-spacer { flex: 1; }
+.sb-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--fg-mute); }
+.sb-dot.ok { background: var(--accent); box-shadow: 0 0 4px var(--accent); }
+.sb-dot.busy { background: var(--busy); box-shadow: 0 0 4px var(--busy); animation: pulse 1.4s infinite; }
+.sb-dot.idle { background: var(--fg-mute); }
+.sb-glyph { color: var(--accent); }
+.sb-label { color: var(--fg-dim); }
+.sb-label.muted { color: var(--fg-mute); }
+.sb-label.busy { color: var(--busy); }
+.sb-sep { color: var(--fg-mute); }
+
+/* fix old class name in shell rule (legacy) */
+.frame-shell { display: grid; grid-template-rows: 38px 1fr 22px; height: 100vh; background: var(--bg-0); }
+
 /* typewriter cursor */
 .typewriter-cursor {
   display: inline-block;

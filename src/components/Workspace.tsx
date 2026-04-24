@@ -8,6 +8,8 @@ import { ScreenshotGallery } from './ScreenshotGallery';
 import { VideoPanel } from './VideoPanel';
 import { LocksPanel } from './LocksPanel';
 import { TasksPanel } from './TasksPanel';
+import { StatusBar } from './StatusBar';
+import { useHotkeys } from '../lib/hotkeys';
 import { useWorkspace } from '../store/workspace';
 
 export function Workspace() {
@@ -16,6 +18,7 @@ export function Workspace() {
   const paths = useWorkspace((s) => s.paths);
   const createSession = useWorkspace((s) => s.createSession);
   const [bootstrapped, setBootstrapped] = useState(false);
+  useHotkeys();
 
   useEffect(() => {
     if (!paths || bootstrapped) return;
@@ -70,6 +73,8 @@ export function Workspace() {
           </Panel>
         </PanelGroup>
       </div>
+
+      <StatusBar />
     </div>
   );
 }
