@@ -1041,6 +1041,110 @@ input:focus { outline: none; border-color: var(--accent); }
 .hint-text { font-size: 10px; color: var(--fg-dim); line-height: 1.5; }
 .hint-text code { background: var(--bg-3); padding: 1px 4px; border-radius: 2px; color: var(--accent-2); }
 
+/* ============ ACTIVITY HEATMAP ============ */
+.hm-wrap { overflow-x: auto; padding: 6px 0; }
+.hm-svg { display: block; }
+.hm-label { font-size: 9px; fill: var(--fg-mute); font-family: 'JetBrains Mono', monospace; }
+.hm-tooltip {
+  position: fixed;
+  background: var(--bg-1);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--fg);
+  box-shadow: 0 0 12px rgba(90, 242, 196, 0.25);
+  pointer-events: none;
+  z-index: 50;
+  white-space: nowrap;
+}
+.hm-legend { display: flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 10px; }
+.hm-legend-cell { width: 12px; height: 12px; border-radius: 2px; border: 1px solid var(--line-soft); }
+
+/* ============ MASCOT ============ */
+.mascot {
+  position: fixed;
+  left: 76px;
+  bottom: 30px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  z-index: 80;
+  font-family: 'JetBrains Mono', monospace;
+  user-select: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.mascot-face {
+  font-size: 14px;
+  color: var(--fg);
+  animation: mascot-bob 4s ease-in-out infinite;
+}
+.mascot-label {
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: var(--fg-mute);
+  text-transform: uppercase;
+}
+.mascot-hide {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 14px;
+  height: 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--fg-mute);
+  font-size: 10px;
+  line-height: 12px;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.mascot:hover .mascot-hide { opacity: 1; }
+.mascot-hide:hover { color: var(--err); border-color: var(--err); }
+
+@keyframes mascot-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+
+.mascot.state-idle     { border-color: var(--line); }
+.mascot.state-busy     { border-color: var(--busy); box-shadow: 0 0 12px rgba(192, 142, 255, 0.2); }
+.mascot.state-busy .mascot-face { animation: mascot-bob 1.2s ease-in-out infinite; }
+.mascot.state-excited  { border-color: var(--accent); box-shadow: 0 0 16px rgba(90, 242, 196, 0.35); }
+.mascot.state-excited .mascot-face { animation: mascot-bob 0.6s ease-in-out infinite; color: var(--accent); }
+.mascot.state-tired    { border-color: var(--err); box-shadow: 0 0 12px rgba(255, 107, 107, 0.25); }
+.mascot.state-tired .mascot-face { animation: none; color: var(--err); }
+.mascot.state-sleeping { opacity: 0.5; border-color: var(--line-soft); }
+.mascot.state-sleeping .mascot-face { animation: mascot-bob 8s ease-in-out infinite; color: var(--fg-mute); }
+.mascot.state-spark    { border-color: var(--accent-2); box-shadow: 0 0 20px rgba(95, 215, 255, 0.5); }
+.mascot.state-spark .mascot-face { color: var(--accent-2); animation: mascot-bob 0.4s ease-in-out infinite; }
+
+.mascot-hidden-chip {
+  position: fixed;
+  left: 76px;
+  bottom: 30px;
+  width: 24px;
+  height: 24px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--fg-mute);
+  font-size: 12px;
+  padding: 0;
+  cursor: pointer;
+  z-index: 80;
+  opacity: 0.5;
+}
+.mascot-hidden-chip:hover { opacity: 1; color: var(--accent); border-color: var(--accent); }
+
 /* ============ VOICE INPUT ============ */
 .voice-btn {
   background: var(--bg-3);

@@ -13,6 +13,7 @@ import { ActivityHeatmap } from './ActivityHeatmap';
 import { StatusBar } from './StatusBar';
 import { QuickSearch } from './QuickSearch';
 import { Notifications } from './Notifications';
+import { Mascot } from './Mascot';
 import { useHotkeys } from '../lib/hotkeys';
 import { useWorkspace } from '../store/workspace';
 
@@ -92,6 +93,7 @@ export function Workspace() {
       <StatusBar />
       <QuickSearch />
       <Notifications />
+      <Mascot />
     </div>
   );
 }
