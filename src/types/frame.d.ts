@@ -103,6 +103,18 @@ export interface TasksSummary {
   windowHours: number;
 }
 
+export type InternalTaskStatus = 'pending' | 'in-progress' | 'done';
+
+export interface InternalTask {
+  id: string;
+  title: string;
+  status: InternalTaskStatus;
+  createdAt: number;
+  updatedAt: number;
+  notes?: string;
+  order: number;
+}
+
 export interface LockState {
   files: Array<{ path: string; sessionId: string; sinceMs: number }>;
 }

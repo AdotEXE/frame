@@ -704,6 +704,74 @@ input:focus { outline: none; border-color: var(--accent); }
 /* ============ TASKS PANEL ============ */
 .btn.subtle.active { color: var(--accent); border-color: var(--accent); }
 
+/* ---- internal queue ---- */
+.queue-input { display: flex; gap: 4px; margin-top: 6px; margin-bottom: 6px; }
+.queue-input-field {
+  flex: 1;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--fg);
+  padding: 4px 8px;
+  font-size: 11px;
+  border-radius: 3px;
+  font-family: inherit;
+  width: auto;
+}
+.queue-input-field:focus { outline: none; border-color: var(--accent); }
+
+.queue-list { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+
+.queue-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  background: var(--bg-2);
+  border-left: 2px solid var(--fg-mute);
+  border-radius: 2px;
+  font-size: 11px;
+}
+.queue-row.status-pending     { border-left-color: var(--accent-2); }
+.queue-row.status-in-progress { border-left-color: var(--busy); background: rgba(192, 142, 255, 0.06); }
+.queue-row.status-done        { border-left-color: var(--accent); opacity: 0.55; }
+
+.queue-check {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--fg-mute);
+  font-size: 13px;
+  cursor: pointer;
+  flex: 0 0 auto;
+  padding: 0;
+}
+.queue-check.status-pending     { color: var(--accent-2); border-color: var(--accent-2); }
+.queue-check.status-in-progress { color: var(--busy); border-color: var(--busy); }
+.queue-check.status-done        { color: var(--accent); border-color: var(--accent); }
+.queue-check:hover { box-shadow: 0 0 6px currentColor; }
+
+.queue-title { flex: 1; color: var(--fg); }
+.queue-row.status-done .queue-title { text-decoration: line-through; color: var(--fg-mute); }
+
+.queue-del {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--fg-mute);
+  font-size: 14px;
+  padding: 0 6px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.queue-del:hover { color: var(--err); border-color: var(--err); }
+
+.queue-footer { margin-bottom: 12px; }
+
+
 .task-list { display: flex; flex-direction: column; gap: 1px; margin-top: 8px; }
 .task-row {
   display: flex;

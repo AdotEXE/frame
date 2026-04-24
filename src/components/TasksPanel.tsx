@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useWorkspace } from '../store/workspace';
-import type { TaskAgent, ToolEvent, SubagentInvocation } from '../types/frame';
+import type { TaskAgent, ToolEvent, SubagentInvocation, InternalTask } from '../types/frame';
 import { TypewriterText } from '../lib/typewriter';
 
 type ViewMode = 'cards' | 'list';
@@ -42,8 +42,10 @@ export function TasksPanel() {
 
   return (
     <div className="panel">
+      <Queue />
+
       <div className="panel-head">
-        <span className="panel-title">TASKS</span>
+        <span className="panel-title">CLAUDE AGENTS</span>
         <span className="panel-meta">
           {live.length} active · {idle.length} idle · scanned {lastScanAgo} ago · last {tasks.windowHours}h
         </span>
@@ -148,6 +150,80 @@ function SubagentRow({ sub }: { sub: SubagentInvocation }) {
       <span className="task-sub-desc" title={sub.promptPreview}>{sub.description || sub.promptPreview}</span>
       <span className="task-sub-time">{ago(sub.startedAt)}</span>
     </div>
+  );
+}
+
+function Queue() {
+  const queue = useWorkspace((s) => s.queue);
+  const refresh = useWorkspace((s) => s.refreshQueue);
+  const add = useWorkspace((s) => s.queueAdd);
+  const update = useWorkspace((s) => s.queueUpdate);
+  const remove = useWorkspace((s) => s.queueRemove);
+  const [draft, setDraft] = useState('');
+  const [showDone, setShowDone] = useState(false);
+
+  useEffect(() => { void refresh(); }, [refresh]);
+
+  const visible = showDone ? queue : queue.filter((t) => t.status !== 'done');
+  const pending = queue.filter((t) => t.status === 'pending').length;
+  const inProgress = queue.filter((t) => t.status === 'in-progress').length;
+  const done = queue.filter((t) => t.status === 'done').length;
+
+  async function submit() {
+    const v = draft.trim();
+    if (!v) return;
+    setDraft('');
+    await add(v);
+  }
+
+  async function cycleStatus(t: InternalTask) {
+    const next = t.status === 'pending' ? 'in-progress' : t.status === 'in-progress' ? 'done' : 'pending';
+    await update(t.id, { status: next });
+  }
+
+  return (
+    <>
+      <div className="panel-head">
+        <span className="panel-title">MY QUEUE</span>
+        <span className="panel-meta">
+          {pending} pending · {inProgress} in-progress · {done} done
+        </span>
+      </div>
+
+      <div className="queue-input">
+        <input
+          className="queue-input-field"
+          placeholder="add task to queue (Enter)"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') void submit(); }}
+        />
+        <button className="btn" onClick={() => void submit()} disabled={!draft.trim()}>+ add</button>
+      </div>
+
+      <div className="queue-list">
+        {visible.length === 0 && <div className="muted">queue is empty — add your first task above</div>}
+        {visible.map((t) => (
+          <div key={t.id} className={`queue-row status-${t.status}`}>
+            <button
+              className={`queue-check status-${t.status}`}
+              onClick={() => void cycleStatus(t)}
+              title={`cycle: pending → in-progress → done · current: ${t.status}`}
+            >
+              {t.status === 'done' ? '✓' : t.status === 'in-progress' ? '◐' : '○'}
+            </button>
+            <span className="queue-title">{t.title}</span>
+            <button className="queue-del" onClick={() => void remove(t.id)} title="delete">×</button>
+          </div>
+        ))}
+      </div>
+
+      <div className="queue-footer">
+        <button className="btn subtle small" onClick={() => setShowDone((v) => !v)}>
+          {showDone ? 'hide done' : `show done (${done})`}
+        </button>
+      </div>
+    </>
   );
 }
 

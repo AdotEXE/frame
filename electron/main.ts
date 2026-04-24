@@ -9,6 +9,7 @@ import { HookListener } from './hook-listener.js';
 import { FramePaths } from './paths.js';
 import { CostScanner } from './cost-scanner.js';
 import { TasksScanner } from './tasks-scanner.js';
+import { InternalTasksStore } from './internal-tasks.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -20,6 +21,7 @@ let coordinator: Coordinator;
 let hookListener: HookListener;
 let cost: CostScanner;
 let tasks: TasksScanner;
+let internalTasks: InternalTasksStore;
 
 const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL;
 
@@ -169,6 +171,13 @@ async function bootstrap(): Promise<void> {
 
   tasks = new TasksScanner();
   ipcMain.handle('tasks:summary', (_e, hours?: number) => tasks.summary(hours ?? 6));
+
+  internalTasks = new InternalTasksStore();
+  await internalTasks.init();
+  ipcMain.handle('queue:list', () => internalTasks.list());
+  ipcMain.handle('queue:add', (_e, title: string, notes?: string) => internalTasks.add(title, notes));
+  ipcMain.handle('queue:update', (_e, id: string, patch: Record<string, unknown>) => internalTasks.update(id, patch));
+  ipcMain.handle('queue:remove', (_e, id: string) => internalTasks.remove(id));
 
   // ---- IPC: Misc ----
   ipcMain.handle('app:paths', () => FramePaths.all());

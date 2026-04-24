@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ScreenshotEntry, SessionInfo, FrameHookEvent, VideoJob, LockState, CostSummary, TasksSummary } from '../types/frame';
+import type { ScreenshotEntry, SessionInfo, FrameHookEvent, VideoJob, LockState, CostSummary, TasksSummary, InternalTask } from '../types/frame';
 
 interface WorkspaceState {
   sessions: SessionInfo[];
@@ -10,6 +10,7 @@ interface WorkspaceState {
   locks: LockState;
   cost: CostSummary | null;
   tasks: TasksSummary | null;
+  queue: InternalTask[];
   panel: 'dashboard' | 'screenshots' | 'video' | 'locks' | 'tasks';
   paths: { root: string; screenshots: string; videos: string; data: string } | null;
 
@@ -23,6 +24,10 @@ interface WorkspaceState {
   refreshLocks(): Promise<void>;
   refreshCost(hours?: number): Promise<void>;
   refreshTasks(hours?: number): Promise<void>;
+  refreshQueue(): Promise<void>;
+  queueAdd(title: string, notes?: string): Promise<void>;
+  queueUpdate(id: string, patch: Partial<InternalTask>): Promise<void>;
+  queueRemove(id: string): Promise<void>;
 }
 
 const STATUS_BUSY_MS = 4000;
@@ -36,6 +41,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   locks: { files: [] },
   cost: null,
   tasks: null,
+  queue: [],
   panel: 'dashboard',
   paths: null,
 
@@ -97,7 +103,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       }, STATUS_BUSY_MS);
     });
 
-    await Promise.all([get().refreshScreenshots(), get().refreshVideoJobs(), get().refreshLocks(), get().refreshCost(), get().refreshTasks()]);
+    await Promise.all([get().refreshScreenshots(), get().refreshVideoJobs(), get().refreshLocks(), get().refreshCost(), get().refreshTasks(), get().refreshQueue()]);
 
     // Refresh cost periodically — Claude Code logs grow during sessions.
     const costTimer = setInterval(() => { void get().refreshCost(); }, 10_000);
@@ -166,5 +172,25 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   async refreshTasks(hours = 6) {
     const summary = await window.frame.tasks.summary(hours) as TasksSummary;
     set({ tasks: summary });
+  },
+
+  async refreshQueue() {
+    const list = await window.frame.queue.list();
+    set({ queue: list as InternalTask[] });
+  },
+
+  async queueAdd(title, notes) {
+    await window.frame.queue.add(title, notes);
+    await get().refreshQueue();
+  },
+
+  async queueUpdate(id, patch) {
+    await window.frame.queue.update(id, patch);
+    await get().refreshQueue();
+  },
+
+  async queueRemove(id) {
+    await window.frame.queue.remove(id);
+    await get().refreshQueue();
   }
 }));

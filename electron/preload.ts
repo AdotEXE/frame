@@ -61,6 +61,15 @@ export const frameApi = {
   tasks: {
     summary: (hours?: number) => ipcRenderer.invoke('tasks:summary', hours) as Promise<unknown>
   },
+  queue: {
+    list: () => ipcRenderer.invoke('queue:list') as Promise<Array<{
+      id: string; title: string; status: 'pending' | 'in-progress' | 'done';
+      createdAt: number; updatedAt: number; notes?: string; order: number;
+    }>>,
+    add: (title: string, notes?: string) => ipcRenderer.invoke('queue:add', title, notes),
+    update: (id: string, patch: Record<string, unknown>) => ipcRenderer.invoke('queue:update', id, patch),
+    remove: (id: string) => ipcRenderer.invoke('queue:remove', id)
+  },
   app: {
     paths: () => ipcRenderer.invoke('app:paths') as Promise<{ root: string; screenshots: string; videos: string; data: string }>,
     openFolder: () => ipcRenderer.invoke('app:open-folder') as Promise<string | null>,
