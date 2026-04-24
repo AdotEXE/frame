@@ -74,7 +74,8 @@ export const frameApi = {
     paths: () => ipcRenderer.invoke('app:paths') as Promise<{ root: string; screenshots: string; videos: string; data: string }>,
     openFolder: () => ipcRenderer.invoke('app:open-folder') as Promise<string | null>,
     filePathFor: (file: File): string => webUtils.getPathForFile(file),
-    resolveCwd: (p: string) => ipcRenderer.invoke('app:resolve-cwd', p) as Promise<{ cwd: string; label: string } | null>
+    resolveCwd: (p: string) => ipcRenderer.invoke('app:resolve-cwd', p) as Promise<{ cwd: string; label: string } | null>,
+    onSetPanel: (fn: Listener<string>) => subscribe('panel:set', fn)
   }
 };
 

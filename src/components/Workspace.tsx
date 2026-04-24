@@ -17,8 +17,17 @@ export function Workspace() {
   const panel = useWorkspace((s) => s.panel);
   const paths = useWorkspace((s) => s.paths);
   const createSession = useWorkspace((s) => s.createSession);
+  const setPanel = useWorkspace((s) => s.setPanel);
   const [bootstrapped, setBootstrapped] = useState(false);
   useHotkeys();
+
+  useEffect(() => {
+    const off = window.frame.app.onSetPanel((name) => {
+      const valid: Array<'dashboard' | 'tasks' | 'screenshots' | 'video' | 'locks'> = ['dashboard', 'tasks', 'screenshots', 'video', 'locks'];
+      if (valid.includes(name as typeof valid[number])) setPanel(name as typeof valid[number]);
+    });
+    return () => off();
+  }, [setPanel]);
 
   useEffect(() => {
     if (!paths || bootstrapped) return;

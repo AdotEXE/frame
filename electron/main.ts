@@ -10,6 +10,7 @@ import { FramePaths } from './paths.js';
 import { CostScanner } from './cost-scanner.js';
 import { TasksScanner } from './tasks-scanner.js';
 import { InternalTasksStore } from './internal-tasks.js';
+import { ApiServer } from './api-server.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -22,6 +23,7 @@ let hookListener: HookListener;
 let cost: CostScanner;
 let tasks: TasksScanner;
 let internalTasks: InternalTasksStore;
+let api: ApiServer;
 
 const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL;
 
@@ -179,6 +181,15 @@ async function bootstrap(): Promise<void> {
   ipcMain.handle('queue:update', (_e, id: string, patch: Record<string, unknown>) => internalTasks.update(id, patch));
   ipcMain.handle('queue:remove', (_e, id: string) => internalTasks.remove(id));
 
+  // HTTP API for the MCP bridge (stdio bridge in scripts/mcp-bridge.cjs).
+  const defaultCwd = path.dirname(FramePaths.all().root);
+  api = new ApiServer({
+    pty, internalTasks, screenshots, tasks, cost, coordinator,
+    defaultCwd,
+    setPanel: (name) => send('panel:set', name)
+  });
+  await api.start();
+
   // ---- IPC: Misc ----
   ipcMain.handle('app:paths', () => FramePaths.all());
   ipcMain.handle('app:open-folder', async () => {
@@ -223,4 +234,5 @@ app.on('will-quit', () => {
   video?.dispose();
   coordinator?.dispose();
   hookListener?.dispose();
+  api?.dispose();
 });
