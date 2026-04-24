@@ -3,6 +3,7 @@ import { useWorkspace } from '../store/workspace';
 import type { TaskAgent, ToolEvent, SubagentInvocation, InternalTask } from '../types/frame';
 import { TypewriterText } from '../lib/typewriter';
 import { useFrameEvent } from '../lib/hotkeys';
+import { VoiceInput } from './VoiceInput';
 
 type ViewMode = 'cards' | 'list';
 const VIEW_KEY = 'frame.tasks.view';
@@ -199,10 +200,15 @@ function Queue() {
         <input
           ref={inputRef}
           className="queue-input-field"
-          placeholder="add task to queue (Enter) · Ctrl+Q from anywhere"
+          placeholder="add task · Enter to save · 🎤 hold to dictate · Ctrl+Q from anywhere"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') void submit(); }}
+        />
+        <VoiceInput
+          onInterim={(t) => setDraft(t)}
+          onResult={(t) => setDraft(t)}
+          title="hold to dictate — release to save transcript"
         />
         <button className="btn" onClick={() => void submit()} disabled={!draft.trim()}>+ add</button>
       </div>

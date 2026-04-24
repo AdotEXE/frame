@@ -1041,6 +1041,44 @@ input:focus { outline: none; border-color: var(--accent); }
 .hint-text { font-size: 10px; color: var(--fg-dim); line-height: 1.5; }
 .hint-text code { background: var(--bg-3); padding: 1px 4px; border-radius: 2px; color: var(--accent-2); }
 
+/* ============ VOICE INPUT ============ */
+.voice-btn {
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  color: var(--fg-mute);
+  border-radius: 3px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.12s;
+  user-select: none;
+}
+.voice-btn:hover { color: var(--fg); border-color: var(--accent-2); }
+.voice-btn.recording {
+  color: var(--err);
+  border-color: var(--err);
+  background: rgba(255, 107, 107, 0.08);
+  animation: voice-pulse 1s ease-in-out infinite;
+}
+.voice-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--fg-mute);
+}
+.voice-btn.recording .voice-dot { background: var(--err); box-shadow: 0 0 8px var(--err); }
+@keyframes voice-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(255, 107, 107, 0); }
+}
+
+.qs-input-wrap { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--line); padding: 0 10px; }
+.qs-input-wrap .qs-input { border-bottom: none; padding: 12px 4px; }
+.qs-input-wrap .voice-btn { flex: 0 0 auto; }
+
 /* ============ SETTINGS PANEL ============ */
 .settings-section {
   margin-bottom: 14px;

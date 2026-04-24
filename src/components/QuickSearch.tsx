@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useWorkspace } from '../store/workspace';
 import { useFrameEvent, dispatchFrameEvent } from '../lib/hotkeys';
+import { VoiceInput } from './VoiceInput';
 
 type ResultKind = 'session' | 'queue' | 'screenshot' | 'video' | 'event' | 'task';
 
@@ -148,14 +149,17 @@ export function QuickSearch() {
   return (
     <div className="qs-overlay" onClick={close}>
       <div className="qs-box" onClick={(e) => e.stopPropagation()}>
-        <input
-          ref={inputRef}
-          className="qs-input"
-          placeholder="search sessions, queue, snaps, videos, events…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onKeyDown={onKey}
-        />
+        <div className="qs-input-wrap">
+          <input
+            ref={inputRef}
+            className="qs-input"
+            placeholder="search sessions, queue, snaps, videos, events… · 🎤 hold to speak"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={onKey}
+          />
+          <VoiceInput onInterim={(t) => setQ(t)} onResult={(t) => setQ(t)} />
+        </div>
         <div className="qs-results">
           {results.length === 0 && (
             <div className="qs-empty">{q ? 'no matches' : 'start typing — or ↑↓ to scroll all'}</div>
