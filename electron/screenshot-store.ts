@@ -129,6 +129,10 @@ export class ScreenshotStore {
     return entry;
   }
 
+  pathOf(id: string): string | null {
+    return this.byId.get(id)?.path ?? null;
+  }
+
   list(limit = 200): ScreenshotEntry[] {
     return [...this.rows].sort((a, b) => b.createdAt - a.createdAt).slice(0, limit);
   }

@@ -26,6 +26,7 @@ export const frameApi = {
     captureFromClipboard: (label?: string) => ipcRenderer.invoke('screenshot:capture-clipboard', label),
     list: (limit?: number) => ipcRenderer.invoke('screenshot:list', limit),
     read: (id: string) => ipcRenderer.invoke('screenshot:read', id) as Promise<string | null>,
+    thumb: (id: string, maxWidth?: number) => ipcRenderer.invoke('screenshot:thumb', id, maxWidth) as Promise<string | null>,
     remove: (id: string) => ipcRenderer.invoke('screenshot:delete', id),
     saveDataUrl: (dataURL: string, label?: string) => ipcRenderer.invoke('screenshot:save-image-data', dataURL, label),
     onNew: (fn: Listener<unknown>) => subscribe('screenshot:new', fn)

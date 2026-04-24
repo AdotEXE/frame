@@ -121,6 +121,18 @@ async function bootstrap(): Promise<void> {
     const img = nativeImage.createFromDataURL(dataURL);
     return screenshots.saveImage(img.toPNG(), label);
   });
+  ipcMain.handle('screenshot:thumb', async (_e, id: string, maxWidth = 240) => {
+    const fullPath = await screenshots.pathOf(id);
+    if (!fullPath) return null;
+    try {
+      const img = nativeImage.createFromPath(fullPath);
+      if (img.isEmpty()) return null;
+      const resized = img.resize({ width: maxWidth, quality: 'good' });
+      return `data:image/png;base64,${resized.toPNG().toString('base64')}`;
+    } catch {
+      return null;
+    }
+  });
 
   // ---- IPC: Video ----
   ipcMain.handle('video:select', async () => {

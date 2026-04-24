@@ -1,6 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useWorkspace } from '../store/workspace';
 import type { TaskAgent, ToolEvent, SubagentInvocation } from '../types/frame';
+
+type ViewMode = 'cards' | 'list';
+const VIEW_KEY = 'frame.tasks.view';
 
 function ago(ts: number | null): string {
   if (!ts) return '—';
@@ -18,20 +21,30 @@ function projectShort(cwd: string): string {
 export function TasksPanel() {
   const tasks = useWorkspace((s) => s.tasks);
   const refresh = useWorkspace((s) => s.refreshTasks);
+  const [view, setView] = useState<ViewMode>(() => (localStorage.getItem(VIEW_KEY) as ViewMode) || 'cards');
+  const [tick, setTick] = useState(0);
 
   useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => localStorage.setItem(VIEW_KEY, view), [view]);
+  // Force re-render every second so "ago" timers stay live between fetches.
+  useEffect(() => {
+    const t = setInterval(() => setTick((x) => x + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   if (!tasks) return <div className="panel"><div className="muted">scanning task logs…</div></div>;
 
   const live = tasks.agents.filter((a) => a.inflightTool || (Date.now() - a.fileMtime) < 60_000);
   const idle = tasks.agents.filter((a) => !a.inflightTool && (Date.now() - a.fileMtime) >= 60_000);
+  const lastScanAgo = ago(tasks.scannedAt);
+  void tick;
 
   return (
     <div className="panel">
       <div className="panel-head">
         <span className="panel-title">TASKS</span>
         <span className="panel-meta">
-          {live.length} active · {idle.length} idle · last {tasks.windowHours}h
+          {live.length} active · {idle.length} idle · scanned {lastScanAgo} ago · last {tasks.windowHours}h
         </span>
       </div>
       <div className="panel-actions">
@@ -39,16 +52,25 @@ export function TasksPanel() {
         <button className="btn subtle small" onClick={() => refresh(6)}>6h</button>
         <button className="btn subtle small" onClick={() => refresh(24)}>24h</button>
         <button className="btn subtle small" onClick={() => refresh(24 * 7)}>7d</button>
+        <span style={{ flex: 1 }} />
+        <button className={`btn subtle small ${view === 'cards' ? 'active' : ''}`} onClick={() => setView('cards')}>cards</button>
+        <button className={`btn subtle small ${view === 'list' ? 'active' : ''}`} onClick={() => setView('list')}>list</button>
       </div>
 
-      {live.length > 0 && (
+      {view === 'list' && tasks.agents.length > 0 && (
+        <div className="task-list">
+          {tasks.agents.map((a) => <AgentRow key={a.sessionId} agent={a} />)}
+        </div>
+      )}
+
+      {view === 'cards' && live.length > 0 && (
         <>
           <div className="panel-head sub"><span>ACTIVE</span><span className="panel-meta">{live.length}</span></div>
           {live.map((a) => <AgentCard key={a.sessionId} agent={a} />)}
         </>
       )}
 
-      {idle.length > 0 && (
+      {view === 'cards' && idle.length > 0 && (
         <>
           <div className="panel-head sub"><span>IDLE</span><span className="panel-meta">{idle.length}</span></div>
           {idle.map((a) => <AgentCard key={a.sessionId} agent={a} compact />)}
@@ -113,6 +135,20 @@ function SubagentRow({ sub }: { sub: SubagentInvocation }) {
       <span className="task-sub-type">{sub.type}</span>
       <span className="task-sub-desc" title={sub.promptPreview}>{sub.description || sub.promptPreview}</span>
       <span className="task-sub-time">{ago(sub.startedAt)}</span>
+    </div>
+  );
+}
+
+function AgentRow({ agent }: { agent: TaskAgent }) {
+  const isLive = !!agent.inflightTool;
+  const title = agent.lastUserPrompt ?? '(no user prompt)';
+  return (
+    <div className={`task-row ${isLive ? 'live' : 'idle'}`} title={`${agent.cwd}\n\n${title}`}>
+      <span className={`task-dot ${isLive ? 'on' : ''}`} />
+      <span className="task-row-project">{projectShort(agent.cwd)}</span>
+      <span className="task-row-title">{agent.lastUserPrompt ?? <span className="muted">— no prompt yet —</span>}</span>
+      {agent.inflightTool && <span className="task-row-tool">{agent.inflightTool.name}</span>}
+      <span className="task-row-time">{ago(agent.fileMtime)}</span>
     </div>
   );
 }

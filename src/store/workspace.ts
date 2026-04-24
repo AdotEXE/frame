@@ -100,7 +100,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
     await Promise.all([get().refreshScreenshots(), get().refreshVideoJobs(), get().refreshLocks(), get().refreshCost(), get().refreshTasks()]);
 
     // Refresh cost periodically — Claude Code logs grow during sessions.
-    const costTimer = setInterval(() => { void get().refreshCost(); }, 30_000);
+    const costTimer = setInterval(() => { void get().refreshCost(); }, 10_000);
     // Tasks polled more often — that's the live "what is Claude doing" view.
     const tasksTimer = setInterval(() => { void get().refreshTasks(); }, 2_000);
     if (typeof window !== 'undefined') {
