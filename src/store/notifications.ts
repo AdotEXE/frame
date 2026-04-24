@@ -33,6 +33,7 @@ export const useNotifications = create<State>((set, get) => ({
   items: [],
 
   push(opts) {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('frame.notifications.mute') === '1') return '';
     const id = `n-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const ttl = opts.ttlMs ?? DEFAULT_TTL;
     const n: Notification = {

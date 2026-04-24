@@ -8,6 +8,7 @@ import { ScreenshotGallery } from './ScreenshotGallery';
 import { VideoPanel } from './VideoPanel';
 import { LocksPanel } from './LocksPanel';
 import { TasksPanel } from './TasksPanel';
+import { SettingsPanel } from './SettingsPanel';
 import { StatusBar } from './StatusBar';
 import { QuickSearch } from './QuickSearch';
 import { Notifications } from './Notifications';
@@ -25,7 +26,7 @@ export function Workspace() {
 
   useEffect(() => {
     const off = window.frame.app.onSetPanel((name) => {
-      const valid: Array<'dashboard' | 'tasks' | 'screenshots' | 'video' | 'locks'> = ['dashboard', 'tasks', 'screenshots', 'video', 'locks'];
+      const valid: Array<'dashboard' | 'tasks' | 'screenshots' | 'video' | 'locks' | 'settings'> = ['dashboard', 'tasks', 'screenshots', 'video', 'locks', 'settings'];
       if (valid.includes(name as typeof valid[number])) setPanel(name as typeof valid[number]);
     });
     return () => off();
@@ -80,6 +81,7 @@ export function Workspace() {
               {panel === 'screenshots' && <ScreenshotGallery />}
               {panel === 'video' && <VideoPanel />}
               {panel === 'locks' && <LocksPanel />}
+              {panel === 'settings' && <SettingsPanel />}
             </aside>
           </Panel>
         </PanelGroup>
