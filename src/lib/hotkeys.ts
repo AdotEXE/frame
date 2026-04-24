@@ -9,7 +9,8 @@ export type FrameEvent =
   | 'frame:split-down'
   | 'frame:split-close'
   | 'frame:queue-focus'
-  | 'frame:tasks-toggle-view';
+  | 'frame:tasks-toggle-view'
+  | 'frame:quick-search';
 
 export function dispatchFrameEvent(name: FrameEvent): void {
   window.dispatchEvent(new CustomEvent(name));
@@ -73,6 +74,9 @@ export function useHotkeys(): void {
       if (e.shiftKey && k === 'w') { e.preventDefault(); dispatchFrameEvent('frame:split-close'); return; }
       // Ctrl+Shift+L → toggle Tasks view list/cards
       if (e.shiftKey && k === 'l') { e.preventDefault(); dispatchFrameEvent('frame:tasks-toggle-view'); return; }
+
+      // Ctrl+P → open quick search (works even when typing — VS Code convention)
+      if (k === 'p' && !e.shiftKey) { e.preventDefault(); dispatchFrameEvent('frame:quick-search'); return; }
 
       if (inField) return; // remaining shortcuts shouldn't fire while typing
 

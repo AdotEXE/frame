@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { ScreenshotEntry, SessionInfo, FrameHookEvent, VideoJob, LockState, CostSummary, TasksSummary, InternalTask } from '../types/frame';
+import { useNotifications } from './notifications';
 
 interface WorkspaceState {
   sessions: SessionInfo[];
@@ -135,10 +136,16 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       sessions: [...s.sessions, session],
       activeSessionId: s.activeSessionId ?? r.id
     }));
+    useNotifications.getState().push({
+      kind: 'success',
+      title: `session ${opts.label} spawned`,
+      body: opts.cwd
+    });
     return r.id;
   },
 
   async killSession(id) {
+    const label = get().sessions.find((s) => s.id === id)?.label ?? id.slice(0, 8);
     await window.frame.pty.kill(id);
     set((s) => {
       const remaining = s.sessions.filter((x) => x.id !== id);
@@ -147,6 +154,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
         activeSessionId: s.activeSessionId === id ? (remaining[0]?.id ?? null) : s.activeSessionId
       };
     });
+    useNotifications.getState().push({ kind: 'info', title: `killed ${label}` });
   },
 
   async refreshScreenshots() {

@@ -9,6 +9,8 @@ import { VideoPanel } from './VideoPanel';
 import { LocksPanel } from './LocksPanel';
 import { TasksPanel } from './TasksPanel';
 import { StatusBar } from './StatusBar';
+import { QuickSearch } from './QuickSearch';
+import { Notifications } from './Notifications';
 import { useHotkeys } from '../lib/hotkeys';
 import { useWorkspace } from '../store/workspace';
 
@@ -84,6 +86,8 @@ export function Workspace() {
       </div>
 
       <StatusBar />
+      <QuickSearch />
+      <Notifications />
     </div>
   );
 }
