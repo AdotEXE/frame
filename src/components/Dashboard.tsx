@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useWorkspace } from '../store/workspace';
 import { buildFacts, type Category, type FootprintFact } from '../lib/footprint';
+import { TypewriterText, useCountUp } from '../lib/typewriter';
 
 const BUDGET_KEY = 'frame.cost.monthlyBudgetUSD';
-const ROTATE_MS = 5000;
+const ROTATE_MS = 10000;
 
 function ago(ts: number): string {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -116,7 +117,7 @@ export function Dashboard() {
         <div className="cost-meter">
           <div className="cost-row primary">
             <span className="cost-label">total</span>
-            <span className="cost-value-big">{fmtUsd(cost.totalUsdEstimate)}</span>
+            <CostTotal value={cost.totalUsdEstimate} />
           </div>
           <div className="cost-grid">
             <div className="cost-cell"><span>in</span><b>{fmtTokens(cost.inputTokens)}</b></div>
@@ -179,7 +180,9 @@ export function Dashboard() {
                 </span>
                 <span className="footprint-counter">{factIndex + 1} / {facts.length}</span>
               </div>
-              <div className="footprint-text">{fact.text}</div>
+              <div className="footprint-text">
+                <TypewriterText key={`${factIndex}:${fact.text}`} text={fact.text} speedMs={14} />
+              </div>
               <div className="footprint-source">src: {fact.source}</div>
               <div className="footprint-nav">
                 <button className="btn subtle small" onClick={() => setFactIndex((i) => (i - 1 + facts.length) % facts.length)}>‹</button>
@@ -241,17 +244,31 @@ export function Dashboard() {
         {events.length === 0 && <div className="muted">waiting for hook events…</div>}
         {events.slice(0, 60).map((e, i) => {
           const label = e.sessionId ? sessionLabelById.get(e.sessionId) : null;
+          const isNewest = i === 0;
           return (
-            <div key={i} className="event-row">
+            <div key={`${e.ts}-${i}`} className="event-row">
               <span className="event-time">{ago(e.ts)}</span>
               {label && <span className="event-session" title={e.sessionId}>{label}</span>}
               <span className="event-hook">{e.hook}</span>
-              {e.tool && <span className="event-tool">{e.tool}</span>}
-              {e.filePath && <span className="event-file">{e.filePath}</span>}
+              {e.tool && (
+                isNewest
+                  ? <TypewriterText className="event-tool" text={e.tool} speedMs={20} cursor={false} />
+                  : <span className="event-tool">{e.tool}</span>
+              )}
+              {e.filePath && (
+                isNewest
+                  ? <TypewriterText className="event-file" text={e.filePath} speedMs={8} cursor={false} />
+                  : <span className="event-file">{e.filePath}</span>
+              )}
             </div>
           );
         })}
       </div>
     </div>
   );
+}
+
+function CostTotal({ value }: { value: number }) {
+  const animated = useCountUp(value, 700);
+  return <span className="cost-value-big">{fmtUsd(animated)}</span>;
 }

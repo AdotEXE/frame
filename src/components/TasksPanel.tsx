@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useWorkspace } from '../store/workspace';
 import type { TaskAgent, ToolEvent, SubagentInvocation } from '../types/frame';
+import { TypewriterText } from '../lib/typewriter';
 
 type ViewMode = 'cards' | 'list';
 const VIEW_KEY = 'frame.tasks.view';
@@ -99,7 +100,13 @@ function AgentCard({ agent, compact }: { agent: TaskAgent; compact?: boolean }) 
         <div className="task-inflight">
           <span className="task-inflight-tag">RUNNING</span>
           <span className="task-tool-name">{agent.inflightTool.name}</span>
-          <span className="task-tool-input" title={agent.inflightTool.inputPreview}>{agent.inflightTool.inputPreview}</span>
+          <TypewriterText
+            key={agent.inflightTool.id}
+            className="task-tool-input"
+            text={agent.inflightTool.inputPreview}
+            speedMs={10}
+            cursor={false}
+          />
           <span className="task-tool-elapsed">{ago(agent.inflightTool.ts)}</span>
         </div>
       )}
@@ -107,7 +114,12 @@ function AgentCard({ agent, compact }: { agent: TaskAgent; compact?: boolean }) 
       {agent.lastUserPrompt && !compact && (
         <div className="task-prompt">
           <span className="task-prompt-label">last prompt</span>
-          <span className="task-prompt-text">{agent.lastUserPrompt}</span>
+          <TypewriterText
+            key={`${agent.sessionId}:${agent.lastUserPromptAt ?? 0}`}
+            className="task-prompt-text"
+            text={agent.lastUserPrompt}
+            speedMs={12}
+          />
         </div>
       )}
 
@@ -146,7 +158,16 @@ function AgentRow({ agent }: { agent: TaskAgent }) {
     <div className={`task-row ${isLive ? 'live' : 'idle'}`} title={`${agent.cwd}\n\n${title}`}>
       <span className={`task-dot ${isLive ? 'on' : ''}`} />
       <span className="task-row-project">{projectShort(agent.cwd)}</span>
-      <span className="task-row-title">{agent.lastUserPrompt ?? <span className="muted">— no prompt yet —</span>}</span>
+      {agent.lastUserPrompt
+        ? <TypewriterText
+            key={`${agent.sessionId}:${agent.lastUserPromptAt ?? 0}`}
+            className="task-row-title"
+            text={agent.lastUserPrompt}
+            speedMs={8}
+            cursor={false}
+          />
+        : <span className="task-row-title muted">— no prompt yet —</span>
+      }
       {agent.inflightTool && <span className="task-row-tool">{agent.inflightTool.name}</span>}
       <span className="task-row-time">{ago(agent.fileMtime)}</span>
     </div>
