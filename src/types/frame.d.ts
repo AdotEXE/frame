@@ -32,6 +32,15 @@ export interface FrameHookEvent {
   ts: number;
 }
 
+export interface VideoPass {
+  kind: 'base' | 'zoom';
+  fps: number;
+  width: number;
+  startSec?: number;
+  endSec?: number;
+  frames: string[];
+}
+
 export interface VideoJob {
   id: string;
   source: string;
@@ -41,6 +50,19 @@ export interface VideoJob {
   createdAt: number;
   passCount: number;
   totalFrames: number;
+  passes: VideoPass[];
+}
+
+export interface CostSummary {
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreate: number;
+  cacheRead: number;
+  totalUsdEstimate: number;
+  sessions: number;
+  files: number;
+  windowHours: number;
+  lastActivity: number | null;
 }
 
 export interface LockState {

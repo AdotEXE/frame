@@ -8,9 +8,23 @@ function ago(ts: number): string {
   return `${Math.floor(s / 3600)}h`;
 }
 
+function fmtTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return String(n);
+}
+
+function fmtUsd(n: number): string {
+  if (n >= 100) return `$${n.toFixed(0)}`;
+  if (n >= 1) return `$${n.toFixed(2)}`;
+  return `$${n.toFixed(3)}`;
+}
+
 export function Dashboard() {
   const sessions = useWorkspace((s) => s.sessions);
   const events = useWorkspace((s) => s.events);
+  const cost = useWorkspace((s) => s.cost);
+  const refreshCost = useWorkspace((s) => s.refreshCost);
 
   const recentBySession = useMemo(() => {
     const m = new Map<string, number>();
@@ -23,6 +37,34 @@ export function Dashboard() {
 
   return (
     <div className="panel">
+      <div className="panel-head">
+        <span className="panel-title">COST METER</span>
+        <span className="panel-meta">last {cost?.windowHours ?? 24}h · est USD</span>
+      </div>
+      {!cost && <div className="muted">scanning ~/.claude/projects…</div>}
+      {cost && (
+        <div className="cost-meter">
+          <div className="cost-row primary">
+            <span className="cost-label">total</span>
+            <span className="cost-value-big">{fmtUsd(cost.totalUsdEstimate)}</span>
+          </div>
+          <div className="cost-grid">
+            <div className="cost-cell"><span>in</span><b>{fmtTokens(cost.inputTokens)}</b></div>
+            <div className="cost-cell"><span>out</span><b>{fmtTokens(cost.outputTokens)}</b></div>
+            <div className="cost-cell"><span>cache wr</span><b>{fmtTokens(cost.cacheCreate)}</b></div>
+            <div className="cost-cell"><span>cache rd</span><b>{fmtTokens(cost.cacheRead)}</b></div>
+            <div className="cost-cell"><span>files</span><b>{cost.files}</b></div>
+            <div className="cost-cell"><span>last</span><b>{cost.lastActivity ? ago(cost.lastActivity) : '—'}</b></div>
+          </div>
+          <div className="cost-actions">
+            <button className="btn subtle small" onClick={() => refreshCost(1)}>1h</button>
+            <button className="btn subtle small" onClick={() => refreshCost(24)}>24h</button>
+            <button className="btn subtle small" onClick={() => refreshCost(24 * 7)}>7d</button>
+            <button className="btn subtle small" onClick={() => refreshCost(24 * 30)}>30d</button>
+          </div>
+        </div>
+      )}
+
       <div className="panel-head">
         <span className="panel-title">AGENT MATRIX</span>
         <span className="panel-meta">{sessions.length} live · {events.length} events</span>

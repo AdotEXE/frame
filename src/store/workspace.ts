@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ScreenshotEntry, SessionInfo, FrameHookEvent, VideoJob, LockState } from '../types/frame';
+import type { ScreenshotEntry, SessionInfo, FrameHookEvent, VideoJob, LockState, CostSummary } from '../types/frame';
 
 interface WorkspaceState {
   sessions: SessionInfo[];
@@ -8,6 +8,7 @@ interface WorkspaceState {
   events: FrameHookEvent[];
   videoJobs: VideoJob[];
   locks: LockState;
+  cost: CostSummary | null;
   panel: 'dashboard' | 'screenshots' | 'video' | 'locks';
   paths: { root: string; screenshots: string; videos: string; data: string } | null;
 
@@ -19,6 +20,7 @@ interface WorkspaceState {
   refreshScreenshots(): Promise<void>;
   refreshVideoJobs(): Promise<void>;
   refreshLocks(): Promise<void>;
+  refreshCost(hours?: number): Promise<void>;
 }
 
 const STATUS_BUSY_MS = 4000;
@@ -30,6 +32,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   events: [],
   videoJobs: [],
   locks: { files: [] },
+  cost: null,
   panel: 'dashboard',
   paths: null,
 
@@ -65,7 +68,13 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       }, STATUS_BUSY_MS);
     });
 
-    await Promise.all([get().refreshScreenshots(), get().refreshVideoJobs(), get().refreshLocks()]);
+    await Promise.all([get().refreshScreenshots(), get().refreshVideoJobs(), get().refreshLocks(), get().refreshCost()]);
+
+    // Refresh cost periodically — Claude Code logs grow during sessions.
+    const costTimer = setInterval(() => { void get().refreshCost(); }, 30_000);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', () => clearInterval(costTimer));
+    }
   },
 
   setPanel(panel) { set({ panel }); },
@@ -112,5 +121,10 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   async refreshLocks() {
     const state = await window.frame.coord.state() as LockState;
     set({ locks: state });
+  },
+
+  async refreshCost(hours = 24) {
+    const summary = await window.frame.cost.summary(hours);
+    set({ cost: summary });
   }
 }));

@@ -7,6 +7,7 @@ import { VideoPipeline } from './video-pipeline.js';
 import { Coordinator } from './coordinator.js';
 import { HookListener } from './hook-listener.js';
 import { FramePaths } from './paths.js';
+import { CostScanner } from './cost-scanner.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -16,6 +17,7 @@ let screenshots: ScreenshotStore;
 let video: VideoPipeline;
 let coordinator: Coordinator;
 let hookListener: HookListener;
+let cost: CostScanner;
 
 const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL;
 
@@ -125,11 +127,23 @@ async function bootstrap(): Promise<void> {
     return video.zoomIn(jobId, opts);
   });
   ipcMain.handle('video:list-jobs', () => video.listJobs());
+  ipcMain.handle('video:read-frame', async (_e, framePath: string) => {
+    try {
+      const fs = await import('node:fs/promises');
+      const buf = await fs.readFile(framePath);
+      return `data:image/png;base64,${buf.toString('base64')}`;
+    } catch {
+      return null;
+    }
+  });
 
   // ---- IPC: Coordinator ----
   ipcMain.handle('coord:claim', (_e, sessionId: string, files: string[]) => coordinator.claim(sessionId, files));
   ipcMain.handle('coord:release', (_e, sessionId: string, files: string[]) => coordinator.release(sessionId, files));
   ipcMain.handle('coord:state', () => coordinator.snapshot());
+
+  cost = new CostScanner();
+  ipcMain.handle('cost:summary', (_e, hours?: number) => cost.summary(hours ?? 24));
 
   // ---- IPC: Misc ----
   ipcMain.handle('app:paths', () => FramePaths.all());

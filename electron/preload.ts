@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 
 type Listener<T> = (payload: T) => void;
 const subscribe = <T>(channel: string, fn: Listener<T>): (() => void) => {
@@ -36,6 +36,7 @@ export const frameApi = {
     zoom: (jobId: string, opts: { startSec: number; endSec: number; fps: number; width: number }) =>
       ipcRenderer.invoke('video:zoom', jobId, opts),
     listJobs: () => ipcRenderer.invoke('video:list-jobs'),
+    readFrame: (framePath: string) => ipcRenderer.invoke('video:read-frame', framePath) as Promise<string | null>,
     onProgress: (fn: Listener<{ jobId: string; progress: number }>) => subscribe('video:progress', fn),
     onFrames: (fn: Listener<{ jobId: string; frames: string[] }>) => subscribe('video:frames', fn)
   },
@@ -48,9 +49,17 @@ export const frameApi = {
   hooks: {
     onEvent: (fn: Listener<unknown>) => subscribe('hook:event', fn)
   },
+  cost: {
+    summary: (hours?: number) => ipcRenderer.invoke('cost:summary', hours) as Promise<{
+      inputTokens: number; outputTokens: number; cacheCreate: number; cacheRead: number;
+      totalUsdEstimate: number; sessions: number; files: number; windowHours: number;
+      lastActivity: number | null;
+    }>
+  },
   app: {
     paths: () => ipcRenderer.invoke('app:paths') as Promise<{ root: string; screenshots: string; videos: string; data: string }>,
-    openFolder: () => ipcRenderer.invoke('app:open-folder') as Promise<string | null>
+    openFolder: () => ipcRenderer.invoke('app:open-folder') as Promise<string | null>,
+    filePathFor: (file: File): string => webUtils.getPathForFile(file)
   }
 };
 

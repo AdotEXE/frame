@@ -108,7 +108,7 @@ export class VideoPipeline {
     });
   }
 
-  listJobs(): Array<Omit<Job, 'passes'> & { passCount: number; totalFrames: number }> {
+  listJobs(): Array<Omit<Job, 'passes'> & { passCount: number; totalFrames: number; passes: Job['passes'] }> {
     return Array.from(this.jobs.values()).map((j) => ({
       id: j.id,
       source: j.source,
@@ -117,7 +117,8 @@ export class VideoPipeline {
       baseWidth: j.baseWidth,
       createdAt: j.createdAt,
       passCount: j.passes.length,
-      totalFrames: j.passes.reduce((sum, p) => sum + p.frames.length, 0)
+      totalFrames: j.passes.reduce((sum, p) => sum + p.frames.length, 0),
+      passes: j.passes
     }));
   }
 
