@@ -19,6 +19,9 @@ export interface SessionInfo {
   lastTool?: string;
   lastFile?: string;
   events: number;
+  kind: 'pty' | 'ghost';
+  firstSeenAt?: number;
+  lastEventAt?: number;
 }
 
 export interface FrameHookEvent {

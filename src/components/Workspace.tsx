@@ -33,11 +33,13 @@ export function Workspace() {
         <div className="brand">
           <span className="brand-glyph">▍</span>
           <span className="brand-name">FRAME</span>
-          <span className="brand-tag">v0.1 — multi-session command bridge</span>
+          <span className="brand-tag">v0.2.1 — multi-session command bridge</span>
         </div>
         <div className="header-actions">
           <span className="status-dot ok" />
-          <span className="status-text">{sessions.length} session{sessions.length === 1 ? '' : 's'} live</span>
+          <span className="status-text">
+            {sessions.filter((s) => s.kind === 'pty').length} local · {sessions.filter((s) => s.kind === 'ghost').length} external
+          </span>
         </div>
       </header>
 
@@ -49,14 +51,14 @@ export function Workspace() {
         <main className="frame-main">
           <TabBar />
           <div className="terminal-stage">
-            {sessions.length === 0 && (
+            {sessions.filter((s) => s.kind === 'pty').length === 0 && (
               <div className="empty-stage">
                 <div className="empty-glyph">◇</div>
                 <div className="empty-title">no sessions yet</div>
                 <div className="empty-hint">spawn your first via the + tab</div>
               </div>
             )}
-            {sessions.map((s) => (
+            {sessions.filter((s) => s.kind === 'pty').map((s) => (
               <div key={s.id} className={`terminal-host ${s.id === activeId ? 'active' : 'hidden'}`}>
                 <Terminal sessionId={s.id} />
               </div>

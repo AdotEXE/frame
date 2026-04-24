@@ -221,9 +221,16 @@ input:focus { outline: none; border-color: var(--accent); }
   position: absolute;
   inset: 0;
   padding: 8px;
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 2;
 }
 
-.terminal-host.hidden { display: none; }
+.terminal-host.hidden {
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
 
 .xterm-host {
   width: 100%;
@@ -315,6 +322,8 @@ input:focus { outline: none; border-color: var(--accent); }
 .agent-card.status-busy { border-left-color: var(--busy); box-shadow: 0 0 12px rgba(192, 142, 255, 0.2); }
 .agent-card.status-waiting { border-left-color: var(--warn); }
 .agent-card.status-error { border-left-color: var(--err); }
+.agent-card.kind-ghost { background: linear-gradient(90deg, var(--bg-2), var(--bg-3)); border-style: dashed; }
+.agent-ghost-tag { color: var(--accent-2); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; }
 
 .agent-card-head { display: flex; align-items: center; gap: 8px; }
 .agent-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }

@@ -14,6 +14,8 @@ interface Session {
   cwd: string;
   pid: number;
   proc: ChildProcessWithoutNullStreams;
+  buffer: string[];
+  bufferBytes: number;
 }
 
 interface PtyManagerOpts {
@@ -25,10 +27,7 @@ const isWin = process.platform === 'win32';
 const shellCmd = isWin ? 'powershell.exe' : (process.env.SHELL ?? '/bin/bash');
 const shellArgs = isWin ? ['-NoLogo', '-NoExit', '-NoProfile', '-ExecutionPolicy', 'Bypass'] : [];
 
-// Fallback PTY-less shell session using child_process. Loses cursor positioning
-// for full TUI apps (Claude Code curses-style rendering) but enough to drive
-// commands, see output, and prove the IPC plumbing end-to-end. Upgrade path:
-// install VS Build Tools 2022 + swap in node-pty for a real ConPTY.
+const BUFFER_BYTE_CAP = 200 * 1024;
 
 export class PtyManager {
   private sessions = new Map<string, Session>();
@@ -48,22 +47,46 @@ export class PtyManager {
       windowsHide: true
     });
 
-    const session: Session = { id, label: opts.label, cwd: opts.cwd, pid: proc.pid ?? 0, proc };
+    const session: Session = {
+      id, label: opts.label, cwd: opts.cwd, pid: proc.pid ?? 0, proc,
+      buffer: [], bufferBytes: 0
+    };
     this.sessions.set(id, session);
 
     proc.stdout.setEncoding('utf8');
     proc.stderr.setEncoding('utf8');
-    proc.stdout.on('data', (data: string) => this.opts.onData(id, data));
-    proc.stderr.on('data', (data: string) => this.opts.onData(id, data));
+    const collect = (data: string) => {
+      this.appendToBuffer(session, data);
+      this.opts.onData(id, data);
+    };
+    proc.stdout.on('data', collect);
+    proc.stderr.on('data', collect);
     proc.on('exit', (code) => {
       this.opts.onExit(id, code ?? 0);
       this.sessions.delete(id);
     });
     proc.on('error', (err) => {
-      this.opts.onData(id, `\r\n[frame] spawn error: ${err.message}\r\n`);
+      const msg = `\r\n[frame] spawn error: ${err.message}\r\n`;
+      this.appendToBuffer(session, msg);
+      this.opts.onData(id, msg);
     });
 
     return { id, pid: proc.pid ?? 0 };
+  }
+
+  private appendToBuffer(session: Session, data: string): void {
+    session.buffer.push(data);
+    session.bufferBytes += Buffer.byteLength(data, 'utf8');
+    while (session.bufferBytes > BUFFER_BYTE_CAP && session.buffer.length > 1) {
+      const dropped = session.buffer.shift()!;
+      session.bufferBytes -= Buffer.byteLength(dropped, 'utf8');
+    }
+  }
+
+  getBuffer(id: string): string {
+    const s = this.sessions.get(id);
+    if (!s) return '';
+    return s.buffer.join('');
   }
 
   write(id: string, data: string): boolean {
@@ -74,7 +97,6 @@ export class PtyManager {
   }
 
   resize(_id: string, _cols: number, _rows: number): boolean {
-    // child_process has no PTY → resize is a no-op. Real PTY upgrade reinstates.
     return false;
   }
 

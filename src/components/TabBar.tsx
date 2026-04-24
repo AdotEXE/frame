@@ -22,9 +22,11 @@ export function TabBar() {
     await create({ cwd, label, cols: 120, rows: 32 });
   }
 
+  const ptySessions = sessions.filter((s) => s.kind === 'pty');
+
   return (
     <div className="tab-bar">
-      {sessions.map((s) => (
+      {ptySessions.map((s) => (
         <div key={s.id} className={`tab ${s.id === activeId ? 'active' : ''} status-${s.status}`}>
           <button className="tab-main" onClick={() => setActive(s.id)} title={s.cwd}>
             <span className="tab-status-dot" />

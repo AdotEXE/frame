@@ -67,17 +67,23 @@ export function Dashboard() {
 
       <div className="panel-head">
         <span className="panel-title">AGENT MATRIX</span>
-        <span className="panel-meta">{sessions.length} live · {events.length} events</span>
+        <span className="panel-meta">
+          {sessions.filter((s) => s.kind === 'pty').length} local · {sessions.filter((s) => s.kind === 'ghost').length} external · {events.length} events
+        </span>
       </div>
 
       <div className="agent-grid">
-        {sessions.length === 0 && <div className="muted">no agents yet — spawn one with + tab</div>}
+        {sessions.length === 0 && <div className="muted">no agents yet — spawn with + or wait for external Claude events</div>}
         {sessions.map((s) => (
-          <div key={s.id} className={`agent-card status-${s.status}`}>
+          <div key={s.id} className={`agent-card status-${s.status} kind-${s.kind}`}>
             <div className="agent-card-head">
               <span className="agent-dot" />
               <span className="agent-label">{s.label}</span>
-              <span className="agent-pid">pid {s.pid}</span>
+              {s.kind === 'pty' ? (
+                <span className="agent-pid">pid {s.pid}</span>
+              ) : (
+                <span className="agent-pid agent-ghost-tag">external</span>
+              )}
             </div>
             <div className="agent-cwd" title={s.cwd}>{s.cwd}</div>
             <div className="agent-meta">

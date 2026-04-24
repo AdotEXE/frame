@@ -21,6 +21,13 @@ let cost: CostScanner;
 
 const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL;
 
+// Vite dev needs 'unsafe-eval' for HMR — Electron prints a security warning
+// every reload because of it. The packaged build does NOT need unsafe-eval
+// (chunked output), so the warning is dev-only noise. Suppress only in dev.
+if (VITE_DEV_URL) {
+  process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
+}
+
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1600,
@@ -94,6 +101,7 @@ async function bootstrap(): Promise<void> {
   ipcMain.handle('pty:resize', (_e, sessionId: string, cols: number, rows: number) => pty.resize(sessionId, cols, rows));
   ipcMain.handle('pty:kill', (_e, sessionId: string) => pty.kill(sessionId));
   ipcMain.handle('pty:list', () => pty.list());
+  ipcMain.handle('pty:get-buffer', (_e, sessionId: string) => pty.getBuffer(sessionId));
 
   // ---- IPC: Clipboard / screenshots ----
   ipcMain.handle('clipboard:image', () => {

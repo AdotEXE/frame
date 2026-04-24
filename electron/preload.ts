@@ -15,6 +15,7 @@ export const frameApi = {
     resize: (id: string, cols: number, rows: number) => ipcRenderer.invoke('pty:resize', id, cols, rows),
     kill: (id: string) => ipcRenderer.invoke('pty:kill', id),
     list: () => ipcRenderer.invoke('pty:list') as Promise<Array<{ id: string; label: string; cwd: string; pid: number }>>,
+    getBuffer: (id: string) => ipcRenderer.invoke('pty:get-buffer', id) as Promise<string>,
     onData: (fn: Listener<{ sessionId: string; data: string }>) => subscribe('pty:data', fn),
     onExit: (fn: Listener<{ sessionId: string; code: number }>) => subscribe('pty:exit', fn)
   },

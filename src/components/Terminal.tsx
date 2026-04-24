@@ -55,6 +55,11 @@ export function Terminal({ sessionId }: Props) {
       try { fit.fit(); } catch { /* host not measurable yet */ }
     });
 
+    let mounted = true;
+    void window.frame.pty.getBuffer(sessionId).then((buf) => {
+      if (mounted && buf) term.write(buf);
+    });
+
     const offData = window.frame.pty.onData(({ sessionId: sid, data }) => {
       if (sid === sessionId) term.write(data);
     });
@@ -74,6 +79,7 @@ export function Terminal({ sessionId }: Props) {
     ro.observe(hostRef.current);
 
     return () => {
+      mounted = false;
       offData();
       offExit();
       inputDisp.dispose();

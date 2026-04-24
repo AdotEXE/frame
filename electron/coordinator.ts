@@ -26,7 +26,8 @@ interface Lock {
 export class Coordinator {
   private locks = new Map<string, Lock>();
   private storePath = '';
-  private writeQueued = false;
+  private writeInFlight = false;
+  private writePending = false;
 
   constructor(private readonly opts: Opts) {}
 
@@ -38,7 +39,12 @@ export class Coordinator {
       const parsed = JSON.parse(raw) as Record<string, Lock>;
       for (const [p, l] of Object.entries(parsed)) this.locks.set(p, l);
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === 'ENOENT') return;
+      // File exists but is corrupted — back it up and start clean rather than crashing the app.
+      const backup = `${this.storePath}.corrupted-${Date.now()}`;
+      try { await fs.rename(this.storePath, backup); } catch { /* swallow */ }
+      console.warn(`[coordinator] locks.json was corrupt, moved to ${backup}`);
     }
   }
 
@@ -111,15 +117,32 @@ export class Coordinator {
   }
 
   private persist(): void {
-    if (this.writeQueued) return;
-    this.writeQueued = true;
-    queueMicrotask(async () => {
-      this.writeQueued = false;
-      const obj: Record<string, Lock> = {};
-      for (const [p, l] of this.locks) obj[p] = l;
-      try { await fs.writeFile(this.storePath, JSON.stringify(obj, null, 2), 'utf8'); }
-      catch { /* best-effort persistence */ }
-    });
+    void this.flush();
+  }
+
+  // Single-flight writer. While a writeFile is in flight, mark pending; when it
+  // finishes, drain by writing the latest snapshot once. Atomic via tmp + rename
+  // so a mid-write crash never leaves a half-written locks.json behind.
+  private async flush(): Promise<void> {
+    if (this.writeInFlight) {
+      this.writePending = true;
+      return;
+    }
+    this.writeInFlight = true;
+    try {
+      do {
+        this.writePending = false;
+        const obj: Record<string, Lock> = {};
+        for (const [p, l] of this.locks) obj[p] = l;
+        const tmp = `${this.storePath}.tmp`;
+        await fs.writeFile(tmp, JSON.stringify(obj, null, 2), 'utf8');
+        await fs.rename(tmp, this.storePath);
+      } while (this.writePending);
+    } catch (err) {
+      console.warn('[coordinator] persist failed:', (err as Error).message);
+    } finally {
+      this.writeInFlight = false;
+    }
   }
 
   dispose(): void {

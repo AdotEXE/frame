@@ -45,24 +45,50 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
     frame.coord.onChange((state) => set({ locks: state as LockState }));
     frame.hooks.onEvent((evt) => {
       const event = evt as FrameHookEvent;
-      set((s) => ({
-        events: [event, ...s.events].slice(0, 500),
-        sessions: s.sessions.map((sess) =>
-          sess.id === event.sessionId
-            ? {
-                ...sess,
-                status: event.hook === 'PreToolUse' ? 'busy' : event.hook === 'PostToolUse' ? 'idle' : sess.status,
-                lastTool: event.tool ?? sess.lastTool,
-                lastFile: event.filePath ?? sess.lastFile,
-                events: sess.events + 1
-              }
-            : sess
-        )
-      }));
+      const sid = event.sessionId;
+      set((s) => {
+        const known = sid ? s.sessions.find((x) => x.id === sid) : null;
+        let nextSessions = s.sessions;
+        if (sid && !known) {
+          // External Claude Code instance discovered via hook bridge — make a ghost card.
+          const ghost: SessionInfo = {
+            id: sid,
+            label: `external · ${sid.slice(0, 8)}`,
+            cwd: event.cwd ?? 'unknown',
+            pid: 0,
+            status: event.hook === 'PreToolUse' ? 'busy' : 'idle',
+            lastTool: event.tool,
+            lastFile: event.filePath,
+            events: 1,
+            kind: 'ghost',
+            firstSeenAt: event.ts,
+            lastEventAt: event.ts
+          };
+          nextSessions = [...s.sessions, ghost];
+        } else if (sid) {
+          nextSessions = s.sessions.map((sess) =>
+            sess.id === sid
+              ? {
+                  ...sess,
+                  cwd: sess.kind === 'ghost' && event.cwd ? event.cwd : sess.cwd,
+                  status: event.hook === 'PreToolUse' ? 'busy' : event.hook === 'PostToolUse' ? 'idle' : sess.status,
+                  lastTool: event.tool ?? sess.lastTool,
+                  lastFile: event.filePath ?? sess.lastFile,
+                  events: sess.events + 1,
+                  lastEventAt: event.ts
+                }
+              : sess
+          );
+        }
+        return {
+          events: [event, ...s.events].slice(0, 500),
+          sessions: nextSessions
+        };
+      });
       setTimeout(() => {
         set((s) => ({
           sessions: s.sessions.map((sess) =>
-            sess.id === event.sessionId && sess.status === 'busy' ? { ...sess, status: 'idle' } : sess
+            sess.id === sid && sess.status === 'busy' ? { ...sess, status: 'idle' } : sess
           )
         }));
       }, STATUS_BUSY_MS);
@@ -88,7 +114,8 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       cwd: opts.cwd,
       pid: r.pid,
       status: 'idle',
-      events: 0
+      events: 0,
+      kind: 'pty'
     };
     set((s) => ({
       sessions: [...s.sessions, session],
