@@ -1,0 +1,9 @@
+node_modules
+dist
+dist-electron
+release
+.vscode
+.DS_Store
+*.log
+.frame-data
+.frame.pid
