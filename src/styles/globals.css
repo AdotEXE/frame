@@ -318,6 +318,31 @@ input:focus { outline: none; border-color: var(--accent); }
   z-index: 1;
 }
 
+/* external file/folder drop */
+.terminal-stage.ext-drag-over {
+  outline: 2px dashed var(--accent);
+  outline-offset: -8px;
+  background: rgba(90, 242, 196, 0.04);
+}
+.ext-drop-banner {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  background: var(--bg-1);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  z-index: 30;
+  pointer-events: none;
+  box-shadow: 0 0 24px rgba(90, 242, 196, 0.3);
+}
+.ext-drop-glyph { font-size: 22px; }
+.ext-drop-text { color: var(--accent); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+
 /* drag-to-split overlay */
 .drop-overlay {
   position: absolute;
@@ -577,6 +602,101 @@ input:focus { outline: none; border-color: var(--accent); }
 .cost-cell span { font-size: 9px; color: var(--fg-mute); letter-spacing: 0.06em; text-transform: uppercase; }
 .cost-cell b { font-size: 12px; color: var(--fg); margin-top: 1px; font-weight: 500; }
 .cost-actions { display: flex; gap: 4px; margin-top: 6px; }
+
+/* ---- budget bar ---- */
+.budget-block { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line-soft); }
+.budget-row { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--fg-mute); margin-bottom: 4px; }
+.budget-label { letter-spacing: 0.1em; text-transform: uppercase; }
+.budget-input {
+  width: 60px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  color: var(--fg);
+  padding: 1px 4px;
+  font-size: 10px;
+  border-radius: 2px;
+  font-family: inherit;
+}
+.budget-projection { color: var(--fg-dim); margin-left: auto; font-size: 10px; }
+.budget-bar {
+  position: relative;
+  height: 8px;
+  background: var(--bg-3);
+  border: 1px solid var(--line-soft);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.budget-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+.budget-bar-pct {
+  position: absolute;
+  right: 4px;
+  top: -1px;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  text-shadow: 0 0 4px currentColor;
+  pointer-events: none;
+}
+.budget-disclaimer {
+  margin-top: 6px;
+  font-size: 9px;
+  color: var(--fg-mute);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* ---- footprint fact ---- */
+.footprint-fact {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: var(--bg-3);
+  border: 1px solid var(--line-soft);
+  border-left: 2px solid var(--fg-mute);
+  border-radius: 3px;
+  cursor: default;
+}
+.footprint-fact.tone-positive { border-left-color: var(--accent); }
+.footprint-fact.tone-negative { border-left-color: var(--err); }
+.footprint-fact.tone-neutral { border-left-color: var(--accent-2); }
+
+.footprint-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 3px; }
+.footprint-icon { font-size: 16px; }
+.footprint-cat { font-size: 9px; letter-spacing: 0.12em; font-weight: 600; }
+.footprint-counter { color: var(--fg-mute); font-size: 9px; margin-left: auto; }
+.footprint-text { color: var(--fg); font-size: 11px; line-height: 1.4; }
+.footprint-source { color: var(--fg-mute); font-size: 9px; margin-top: 4px; font-style: italic; }
+.footprint-nav { display: flex; gap: 4px; margin-top: 6px; justify-content: center; }
+.footprint-nav .btn { min-width: 32px; }
+
+.footprint-filter { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.footprint-chip {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--fg-mute);
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: all 0.1s;
+}
+.footprint-chip.off { opacity: 0.5; }
+.footprint-chip.on { font-weight: 600; }
+.footprint-chip:hover { opacity: 1; }
+
+/* ---- event session label ---- */
+.event-session {
+  color: var(--accent);
+  font-size: 10px;
+  width: 80px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ============ TASKS PANEL ============ */
 .task-card {

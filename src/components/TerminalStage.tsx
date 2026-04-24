@@ -13,12 +13,14 @@ export function TerminalStage() {
   const sessions = useWorkspace((s) => s.sessions);
   const activeId = useWorkspace((s) => s.activeSessionId);
   const setActiveSession = useWorkspace((s) => s.setActiveSession);
+  const createSession = useWorkspace((s) => s.createSession);
 
   const ptySessions = sessions.filter((s) => s.kind === 'pty');
   const [splitMode, setSplitMode] = useState<SplitMode>('single');
   const [paneBId, setPaneBId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<DropZone>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [externalDragOver, setExternalDragOver] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
 
   // Listen for any drag involving our tab payload so the overlay only appears when relevant.
@@ -54,6 +56,32 @@ export function TerminalStage() {
     setSplitMode(zone === 'right' ? 'h' : 'v');
     setDragOver(null);
     setDragActive(false);
+  }
+
+  // External (OS) file/folder drop → spawn new session in that cwd.
+  function isExternalFileDrag(e: React.DragEvent): boolean {
+    return e.dataTransfer.types.includes('Files') && !e.dataTransfer.types.includes(DRAG_TYPE);
+  }
+  function onExternalDragOver(e: React.DragEvent) {
+    if (!isExternalFileDrag(e)) return;
+    e.preventDefault();
+    setExternalDragOver(true);
+  }
+  function onExternalDragLeave(e: React.DragEvent) {
+    if (e.currentTarget === e.target) setExternalDragOver(false);
+  }
+  async function onExternalDrop(e: React.DragEvent) {
+    if (!isExternalFileDrag(e)) return;
+    e.preventDefault();
+    setExternalDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const p = window.frame.app.filePathFor(file);
+    if (!p) return;
+    const resolved = await window.frame.app.resolveCwd(p);
+    if (!resolved) return;
+    const label = `${resolved.label}-${ptySessions.length + 1}`;
+    await createSession({ cwd: resolved.cwd, label, cols: 120, rows: 32 });
   }
 
   function killSplit() {
@@ -103,8 +131,21 @@ export function TerminalStage() {
   };
 
   return (
-    <div className="terminal-stage" ref={stageRef}>
+    <div
+      className={`terminal-stage ${externalDragOver ? 'ext-drag-over' : ''}`}
+      ref={stageRef}
+      onDragOver={onExternalDragOver}
+      onDragLeave={onExternalDragLeave}
+      onDrop={onExternalDrop}
+    >
       {splitMode === 'single' && renderPane(null, false)}
+
+      {externalDragOver && (
+        <div className="ext-drop-banner">
+          <span className="ext-drop-glyph">📁</span>
+          <span className="ext-drop-text">drop folder/file → spawn session in that cwd</span>
+        </div>
+      )}
 
       {splitMode !== 'single' && (
         <PanelGroup direction={splitMode === 'h' ? 'horizontal' : 'vertical'} autoSaveId={`frame-stage-${splitMode}`}>

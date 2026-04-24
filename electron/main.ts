@@ -164,6 +164,17 @@ async function bootstrap(): Promise<void> {
     const r = await dialog.showOpenDialog(mainWindow!, { properties: ['openDirectory'] });
     return r.canceled ? null : r.filePaths[0];
   });
+  ipcMain.handle('app:resolve-cwd', async (_e, p: string) => {
+    try {
+      const fs = await import('node:fs/promises');
+      const path = await import('node:path');
+      const stat = await fs.stat(p);
+      const cwd = stat.isDirectory() ? p : path.dirname(p);
+      return { cwd, label: path.basename(cwd) || cwd };
+    } catch {
+      return null;
+    }
+  });
 }
 
 app.whenReady().then(async () => {
