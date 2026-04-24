@@ -24,13 +24,14 @@ export function useFrameEvent(name: FrameEvent, handler: () => void): void {
   }, [name, handler]);
 }
 
-const PANEL_KEYS: Record<string, 'dashboard' | 'tasks' | 'screenshots' | 'video' | 'locks' | 'settings'> = {
+const PANEL_KEYS: Record<string, 'dashboard' | 'tasks' | 'heatmap' | 'screenshots' | 'video' | 'locks' | 'settings'> = {
   '1': 'dashboard',
   '2': 'tasks',
-  '3': 'screenshots',
-  '4': 'video',
-  '5': 'locks',
-  '6': 'settings'
+  '3': 'heatmap',
+  '4': 'screenshots',
+  '5': 'video',
+  '6': 'locks',
+  '7': 'settings'
 };
 
 export function useHotkeys(): void {

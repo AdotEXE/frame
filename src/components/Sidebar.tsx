@@ -1,8 +1,9 @@
 import { useWorkspace } from '../store/workspace';
 
-const PANELS: Array<{ key: 'dashboard' | 'screenshots' | 'video' | 'locks' | 'tasks' | 'settings'; icon: string; label: string }> = [
+const PANELS: Array<{ key: 'dashboard' | 'screenshots' | 'video' | 'locks' | 'tasks' | 'settings' | 'heatmap'; icon: string; label: string }> = [
   { key: 'dashboard', icon: '▤', label: 'Agents' },
   { key: 'tasks', icon: '▦', label: 'Tasks' },
+  { key: 'heatmap', icon: '▥', label: 'Heat' },
   { key: 'screenshots', icon: '◰', label: 'Snaps' },
   { key: 'video', icon: '▶', label: 'Video' },
   { key: 'locks', icon: '⛬', label: 'Locks' },

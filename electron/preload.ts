@@ -61,6 +61,14 @@ export const frameApi = {
   tasks: {
     summary: (hours?: number) => ipcRenderer.invoke('tasks:summary', hours) as Promise<unknown>
   },
+  history: {
+    heatmap: (days?: number) => ipcRenderer.invoke('history:heatmap', days) as Promise<{
+      cells: Array<{ dayOffset: number; hour: number; usd: number; tokens: number; tools: number; sessionIds: string[] }>;
+      days: number;
+      startDayMs: number;
+      scannedAt: number;
+    }>
+  },
   queue: {
     list: () => ipcRenderer.invoke('queue:list') as Promise<Array<{
       id: string; title: string; status: 'pending' | 'in-progress' | 'done';

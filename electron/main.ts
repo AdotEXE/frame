@@ -12,6 +12,7 @@ import { TasksScanner } from './tasks-scanner.js';
 import { InternalTasksStore } from './internal-tasks.js';
 import { ApiServer } from './api-server.js';
 import { TaskRunner } from './task-runner.js';
+import { HistoryScanner } from './history-scanner.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -175,6 +176,9 @@ async function bootstrap(): Promise<void> {
 
   tasks = new TasksScanner();
   ipcMain.handle('tasks:summary', (_e, hours?: number) => tasks.summary(hours ?? 6));
+
+  const history = new HistoryScanner();
+  ipcMain.handle('history:heatmap', (_e, days?: number) => history.heatmap(days ?? 30));
 
   internalTasks = new InternalTasksStore();
   await internalTasks.init();

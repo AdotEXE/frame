@@ -12,7 +12,7 @@ interface WorkspaceState {
   cost: CostSummary | null;
   tasks: TasksSummary | null;
   queue: InternalTask[];
-  panel: 'dashboard' | 'screenshots' | 'video' | 'locks' | 'tasks' | 'settings';
+  panel: 'dashboard' | 'screenshots' | 'video' | 'locks' | 'tasks' | 'settings' | 'heatmap';
   paths: { root: string; screenshots: string; videos: string; data: string } | null;
 
   init(): Promise<void>;
