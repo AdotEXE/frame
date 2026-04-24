@@ -1,7 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useWorkspace } from '../store/workspace';
 import { buildFacts, type Category, type FootprintFact } from '../lib/footprint';
 import { TypewriterText, useCountUp } from '../lib/typewriter';
+
+function shuffleIndices(n: number): number[] {
+  const arr = Array.from({ length: n }, (_, i) => i);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 const BUDGET_KEY = 'frame.cost.monthlyBudgetUSD';
 const ROTATE_MS = 10000;
@@ -43,8 +52,6 @@ const CATEGORY_COLOR: Record<Category, string> = {
   world: '#62a0ff'
 };
 
-const CATEGORIES: Category[] = ['nature', 'tech', 'science', 'salaries', 'prices', 'world'];
-
 export function Dashboard() {
   const sessions = useWorkspace((s) => s.sessions);
   const events = useWorkspace((s) => s.events);
@@ -57,20 +64,17 @@ export function Dashboard() {
   });
   const [factIndex, setFactIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState<Set<Category>>(new Set(CATEGORIES));
+  const orderRef = useRef<number[]>([]);
 
-  const allFacts = useMemo(() => (cost ? buildFacts(cost) : []), [cost]);
-  const facts = useMemo(() => allFacts.filter((f) => categoryFilter.has(f.category)), [allFacts, categoryFilter]);
-
-  function toggleCategory(c: Category) {
-    setCategoryFilter((prev) => {
-      const next = new Set(prev);
-      if (next.has(c)) next.delete(c); else next.add(c);
-      if (next.size === 0) return new Set(CATEGORIES);
-      return next;
-    });
-    setFactIndex(0);
-  }
+  // Stable random permutation — shuffle once, keep order between cost refreshes.
+  // If fact count changes (shouldn't, but safe) we re-shuffle.
+  const facts = useMemo(() => {
+    const raw = cost ? buildFacts(cost) : [];
+    if (orderRef.current.length !== raw.length) {
+      orderRef.current = shuffleIndices(raw.length);
+    }
+    return orderRef.current.map((i) => raw[i]);
+  }, [cost]);
 
   useEffect(() => {
     if (paused || facts.length === 0) return;
@@ -151,19 +155,6 @@ export function Dashboard() {
             <div className="budget-disclaimer">
               API-equivalent estimate · per-turn model rates (Opus / Sonnet / Haiku) · your actual plan billing (Max / Pro / Team) may differ
             </div>
-          </div>
-
-          <div className="footprint-filter">
-            {CATEGORIES.map((c) => (
-              <button
-                key={c}
-                className={`footprint-chip ${categoryFilter.has(c) ? 'on' : 'off'}`}
-                style={{ borderColor: categoryFilter.has(c) ? CATEGORY_COLOR[c] : 'var(--line)', color: categoryFilter.has(c) ? CATEGORY_COLOR[c] : 'var(--fg-mute)' }}
-                onClick={() => toggleCategory(c)}
-              >
-                {CATEGORY_LABEL[c].toLowerCase()}
-              </button>
-            ))}
           </div>
 
           {fact && (

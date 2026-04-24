@@ -689,21 +689,6 @@ input:focus { outline: none; border-color: var(--accent); }
 .footprint-nav { display: flex; gap: 4px; margin-top: 6px; justify-content: center; }
 .footprint-nav .btn { min-width: 32px; }
 
-.footprint-filter { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-.footprint-chip {
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--fg-mute);
-  font-size: 9px;
-  padding: 2px 6px;
-  border-radius: 8px;
-  cursor: pointer;
-  letter-spacing: 0.06em;
-  transition: all 0.1s;
-}
-.footprint-chip.off { opacity: 0.5; }
-.footprint-chip.on { font-weight: 600; }
-.footprint-chip:hover { opacity: 1; }
 
 /* ---- event session label ---- */
 .event-session {
