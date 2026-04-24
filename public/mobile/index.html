@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0e14">
+  <title>Frame Mobile</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>
+    :root {
+      --bg-0: #050810; --bg-1: #0a0e14; --bg-2: #0f141d; --bg-3: #141a25;
+      --line: #1c2532; --fg: #cfe7ff; --fg-dim: #7689a3; --fg-mute: #4d5d75;
+      --accent: #5af2c4; --accent-2: #5fd7ff; --busy: #c08eff;
+      --warn: #f5c451; --err: #ff6b6b;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; background: var(--bg-0); color: var(--fg);
+      font: 13px/1.4 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+      min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); }
+    header { padding: 16px; background: var(--bg-1); border-bottom: 1px solid var(--line);
+      position: sticky; top: 0; z-index: 5; display: flex; align-items: baseline; gap: 10px; }
+    h1 { margin: 0; font-size: 14px; letter-spacing: 0.2em; }
+    .brand-tag { color: var(--fg-mute); font-size: 10px; letter-spacing: 0.06em; }
+    .conn { margin-left: auto; font-size: 10px; color: var(--accent); }
+    .conn.off { color: var(--err); }
+    section { padding: 12px; }
+    .head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+    .title { font-size: 11px; letter-spacing: 0.18em; color: var(--accent); }
+    .meta { font-size: 10px; color: var(--fg-mute); }
+    .card { background: var(--bg-2); border: 1px solid var(--line); border-left: 2px solid var(--fg-mute);
+      border-radius: 4px; padding: 10px 12px; margin-bottom: 6px; }
+    .card.pty { border-left-color: var(--accent); }
+    .card.ghost { border-left-color: var(--accent-2); border-left-style: dashed; }
+    .card.q-pending { border-left-color: var(--accent-2); }
+    .card.q-in-progress { border-left-color: var(--busy); background: rgba(192,142,255,0.07); }
+    .card.q-done { border-left-color: var(--accent); opacity: 0.6; }
+    .row { display: flex; align-items: baseline; gap: 8px; }
+    .name { flex: 1; font-size: 12px; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sub { font-size: 10px; color: var(--fg-dim); }
+    .big { font-size: 28px; color: var(--accent); text-shadow: 0 0 12px rgba(90,242,196,0.4); letter-spacing: 0.04em; }
+    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+    .stat { background: var(--bg-3); padding: 6px 8px; border-radius: 3px; }
+    .stat span { display: block; font-size: 9px; color: var(--fg-mute); text-transform: uppercase; letter-spacing: 0.1em; }
+    .stat b { font-size: 13px; color: var(--fg); }
+    .queue-input-wrap { display: flex; gap: 6px; margin-bottom: 8px; }
+    input[type=text] { flex: 1; background: var(--bg-2); border: 1px solid var(--line); color: var(--fg);
+      padding: 10px 12px; font: inherit; border-radius: 3px; }
+    input:focus { outline: none; border-color: var(--accent); }
+    button { background: var(--bg-2); border: 1px solid var(--line); color: var(--fg); padding: 10px 14px;
+      font: inherit; border-radius: 3px; cursor: pointer; font-size: 12px; }
+    button.primary { color: var(--accent); border-color: var(--accent); }
+    button.mic { font-size: 18px; padding: 10px 12px; }
+    button.mic.rec { color: var(--err); border-color: var(--err); animation: pulse 1s infinite; }
+    @keyframes pulse { 50% { box-shadow: 0 0 0 4px rgba(255,107,107,0); } 0% { box-shadow: 0 0 0 0 rgba(255,107,107,0.4); } }
+    .tab { display: grid; grid-template-columns: 1fr 1fr 1fr; background: var(--bg-1); border-top: 1px solid var(--line);
+      position: sticky; bottom: 0; }
+    .tab button { border: none; border-radius: 0; padding: 12px; font-size: 10px; letter-spacing: 0.1em; color: var(--fg-mute); }
+    .tab button.active { color: var(--accent); border-top: 2px solid var(--accent); }
+    .empty { color: var(--fg-mute); font-style: italic; text-align: center; padding: 18px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>▍FRAME</h1>
+    <span class="brand-tag">mobile</span>
+    <span id="conn" class="conn off">●</span>
+  </header>
+
+  <main id="main"></main>
+
+  <nav class="tab">
+    <button data-tab="dash" class="active">DASH</button>
+    <button data-tab="queue">QUEUE</button>
+    <button data-tab="agents">AGENTS</button>
+  </nav>
+
+  <script>
+    const API = location.origin;
+    const state = { tab: 'dash', cost: null, queue: [], sessions: [], tasks: null, connected: false };
+
+    async function api(path, init) {
+      try {
+        const r = await fetch(API + path, init);
+        state.connected = r.ok;
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return await r.json();
+      } catch (e) {
+        state.connected = false;
+        throw e;
+      } finally {
+        document.getElementById('conn').className = 'conn ' + (state.connected ? '' : 'off');
+      }
+    }
+
+    async function refresh() {
+      try {
+        const [cost, queue, sessions, tasks] = await Promise.all([
+          api('/api/cost?hours=24'),
+          api('/api/queue'),
+          api('/api/sessions'),
+          api('/api/tasks?hours=6')
+        ]);
+        state.cost = cost; state.queue = queue; state.sessions = sessions; state.tasks = tasks;
+        render();
+      } catch (_) { render(); }
+    }
+
+    function fmt$(n) {
+      if (n == null) return '—';
+      if (n >= 1000) return '$' + Math.round(n).toLocaleString('en-US');
+      if (n >= 1) return '$' + n.toFixed(2);
+      return '$' + n.toFixed(3);
+    }
+    function fmtTok(n) {
+      if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + 'k';
+      return String(n);
+    }
+
+    function renderDash() {
+      const c = state.cost || {};
+      const busyAgents = (state.tasks?.agents || []).filter(a => a.inflightTool).length;
+      return `
+        <section>
+          <div class="head"><span class="title">COST</span><span class="meta">last ${c.windowHours ?? 24}h</span></div>
+          <div class="big">${fmt$(c.totalUsdEstimate)}</div>
+          <div class="stat-grid">
+            <div class="stat"><span>in</span><b>${fmtTok(c.inputTokens || 0)}</b></div>
+            <div class="stat"><span>out</span><b>${fmtTok(c.outputTokens || 0)}</b></div>
+            <div class="stat"><span>cache rd</span><b>${fmtTok(c.cacheRead || 0)}</b></div>
+            <div class="stat"><span>local</span><b>${state.sessions.filter(s => !s.kind || s.kind === 'pty').length}</b></div>
+            <div class="stat"><span>running</span><b>${busyAgents}</b></div>
+            <div class="stat"><span>queued</span><b>${state.queue.filter(t => t.status === 'pending').length}</b></div>
+          </div>
+        </section>`;
+    }
+
+    function renderQueue() {
+      const items = state.queue.filter(t => t.status !== 'done');
+      const list = items.length
+        ? items.map(t => `
+            <div class="card q-${t.status}">
+              <div class="row"><span class="name">${escape(t.title)}</span><span class="sub">${t.status}</span></div>
+            </div>`).join('')
+        : '<div class="empty">queue is empty</div>';
+      return `
+        <section>
+          <div class="head"><span class="title">QUEUE</span><span class="meta">${state.queue.filter(t => t.status === 'pending').length} pending</span></div>
+          <div class="queue-input-wrap">
+            <input id="q-input" type="text" placeholder="add task · enter to save">
+            <button class="mic" id="q-mic" title="dictate">🎤</button>
+            <button class="primary" id="q-add">+</button>
+          </div>
+          ${list}
+        </section>`;
+    }
+
+    function renderAgents() {
+      const ownSessions = state.sessions;
+      const externalSessions = (state.tasks?.agents || []).filter(a => a.inflightTool);
+      const sec1 = `
+        <div class="head"><span class="title">LOCAL</span><span class="meta">${ownSessions.length}</span></div>
+        ${ownSessions.length ? ownSessions.map(s => `
+          <div class="card pty">
+            <div class="row"><span class="name">${escape(s.label)}</span><span class="sub">pid ${s.pid}</span></div>
+            <div class="sub">${escape(s.cwd)}</div>
+          </div>`).join('') : '<div class="empty">no local sessions</div>'}`;
+      const sec2 = `
+        <div class="head"><span class="title">ACTIVE EXTERNAL</span><span class="meta">${externalSessions.length}</span></div>
+        ${externalSessions.length ? externalSessions.map(a => `
+          <div class="card ghost">
+            <div class="row"><span class="name">${escape(a.inflightTool?.name || 'running')}</span><span class="sub">${escape(a.sessionId.slice(0, 8))}</span></div>
+            <div class="sub">${escape(a.cwd)}</div>
+            <div class="sub">${escape((a.lastUserPrompt || '').slice(0, 80))}</div>
+          </div>`).join('') : '<div class="empty">no external agents</div>'}`;
+      return `<section>${sec1}${sec2}</section>`;
+    }
+
+    function escape(s) { return String(s ?? '').replace(/[<>&"']/g, c => ({ '<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;', "'":'&#39;' }[c])); }
+
+    function render() {
+      const main = document.getElementById('main');
+      if (state.tab === 'dash') main.innerHTML = renderDash();
+      else if (state.tab === 'queue') { main.innerHTML = renderQueue(); wireQueue(); }
+      else if (state.tab === 'agents') main.innerHTML = renderAgents();
+    }
+
+    function wireQueue() {
+      const input = document.getElementById('q-input');
+      const add = document.getElementById('q-add');
+      const mic = document.getElementById('q-mic');
+      async function submit() {
+        const v = input.value.trim();
+        if (!v) return;
+        input.value = '';
+        await api('/api/queue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: v }) });
+        await refresh();
+      }
+      add.onclick = submit;
+      input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SR) {
+        let rec = null;
+        mic.onmousedown = mic.ontouchstart = (e) => {
+          e.preventDefault();
+          rec = new SR(); rec.lang = 'ru-RU'; rec.continuous = true; rec.interimResults = true;
+          rec.onresult = (ev) => {
+            let t = '';
+            for (let i = ev.resultIndex; i < ev.results.length; i++) t += ev.results[i][0].transcript;
+            input.value = t;
+          };
+          rec.onend = () => { mic.classList.remove('rec'); rec = null; };
+          rec.start(); mic.classList.add('rec');
+        };
+        mic.onmouseup = mic.onmouseleave = mic.ontouchend = () => rec && rec.stop();
+      } else {
+        mic.style.display = 'none';
+      }
+    }
+
+    document.querySelectorAll('.tab button').forEach(b => b.onclick = () => {
+      state.tab = b.dataset.tab;
+      document.querySelectorAll('.tab button').forEach(x => x.classList.toggle('active', x === b));
+      render();
+    });
+
+    refresh();
+    setInterval(refresh, 4000);
+  </script>
+</body>
+</html>

@@ -17,7 +17,7 @@ export default defineConfig({
           build: {
             outDir: 'dist-electron',
             rollupOptions: {
-              external: ['electron', 'fluent-ffmpeg', 'ffmpeg-static', 'chokidar', 'node:http', 'node:fs/promises', 'node:path', 'node:crypto', 'node:url', 'node:child_process'],
+              external: ['electron', 'fluent-ffmpeg', 'ffmpeg-static', 'chokidar', 'node:http', 'node:fs', 'node:fs/promises', 'node:path', 'node:crypto', 'node:url', 'node:child_process', 'node:os'],
               output: { format: 'cjs', entryFileNames: '[name].js' }
             }
           }
