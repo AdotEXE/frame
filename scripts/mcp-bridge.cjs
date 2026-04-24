@@ -14,7 +14,7 @@ const readline = require('node:readline');
 
 const FRAME_HOST = '127.0.0.1';
 const FRAME_PORT = 47822;
-const PROTOCOL_VERSION = '2024-11-05';
+const PROTOCOL_VERSION = '2025-06-18';
 
 // ---------- HTTP helpers ----------
 function frameRequest(method, path, body) {
@@ -182,21 +182,25 @@ rl.on('line', async (line) => {
     }
   } catch (err) {
     if (req.id !== undefined) {
-      send({ jsonrpc: '2.0', id: req.id, error: { code: -32000, message: (err && err.message) || String(err) } });
+      const code = (err && err.code) || -32000;
+      send({ jsonrpc: '2.0', id: req.id, error: { code, message: (err && err.message) || String(err) } });
     }
   }
 });
 
 async function handle(req) {
+  // Silently accept any notification — spec requires no response at all.
+  if (req.method && req.method.startsWith('notifications/')) return undefined;
+
   switch (req.method) {
     case 'initialize':
       return {
         protocolVersion: PROTOCOL_VERSION,
-        capabilities: { tools: {} },
-        serverInfo: { name: 'frame-bridge', version: '0.2.6' }
+        capabilities: { tools: { listChanged: false } },
+        serverInfo: { name: 'frame-bridge', version: '0.2.9' }
       };
-    case 'notifications/initialized':
-      return undefined;
+    case 'ping':
+      return {};
     case 'tools/list':
       return {
         tools: TOOLS.map((t) => ({
@@ -207,7 +211,11 @@ async function handle(req) {
       };
     case 'tools/call': {
       const tool = TOOLS.find((t) => t.name === req.params.name);
-      if (!tool) throw new Error(`unknown tool: ${req.params.name}`);
+      if (!tool) {
+        const err = new Error(`unknown tool: ${req.params.name}`);
+        err.code = -32602;
+        throw err;
+      }
       const args = req.params.arguments || {};
       const r = await tool.handler(args);
       return {
@@ -220,11 +228,10 @@ async function handle(req) {
         isError: r.status >= 400
       };
     }
-    case 'resources/list':
-      return { resources: [] };
-    case 'prompts/list':
-      return { prompts: [] };
-    default:
-      throw new Error(`unsupported method: ${req.method}`);
+    default: {
+      const err = new Error(`unsupported method: ${req.method}`);
+      err.code = -32601;
+      throw err;
+    }
   }
 }

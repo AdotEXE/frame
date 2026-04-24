@@ -68,7 +68,13 @@ export const frameApi = {
     }>>,
     add: (title: string, notes?: string) => ipcRenderer.invoke('queue:add', title, notes),
     update: (id: string, patch: Record<string, unknown>) => ipcRenderer.invoke('queue:update', id, patch),
-    remove: (id: string) => ipcRenderer.invoke('queue:remove', id)
+    remove: (id: string) => ipcRenderer.invoke('queue:remove', id),
+    run: (id: string, cwd: string) => ipcRenderer.invoke('queue:run', id, cwd) as Promise<{ ok: true; startedAt: number } | { ok: false; error: string }>,
+    kill: (id: string) => ipcRenderer.invoke('queue:kill', id) as Promise<boolean>,
+    getOutput: (id: string) => ipcRenderer.invoke('queue:output', id) as Promise<{ running: boolean; startedAt: number | null; buffer: string }>,
+    listRunning: () => ipcRenderer.invoke('queue:running') as Promise<Array<{ taskId: string; startedAt: number; cwd: string }>>,
+    onOutput: (fn: Listener<{ taskId: string; chunk: string }>) => subscribe('queue:output', fn),
+    onExit: (fn: Listener<{ taskId: string; code: number; durationMs: number }>) => subscribe('queue:exit', fn)
   },
   app: {
     paths: () => ipcRenderer.invoke('app:paths') as Promise<{ root: string; screenshots: string; videos: string; data: string }>,

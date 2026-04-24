@@ -11,6 +11,7 @@ import { CostScanner } from './cost-scanner.js';
 import { TasksScanner } from './tasks-scanner.js';
 import { InternalTasksStore } from './internal-tasks.js';
 import { ApiServer } from './api-server.js';
+import { TaskRunner } from './task-runner.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -24,6 +25,7 @@ let cost: CostScanner;
 let tasks: TasksScanner;
 let internalTasks: InternalTasksStore;
 let api: ApiServer;
+let taskRunner: TaskRunner;
 
 const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL;
 
@@ -181,6 +183,15 @@ async function bootstrap(): Promise<void> {
   ipcMain.handle('queue:update', (_e, id: string, patch: Record<string, unknown>) => internalTasks.update(id, patch));
   ipcMain.handle('queue:remove', (_e, id: string) => internalTasks.remove(id));
 
+  taskRunner = new TaskRunner(internalTasks, {
+    onOutput: (taskId, chunk) => send('queue:output', { taskId, chunk }),
+    onExit: (taskId, code, durationMs) => send('queue:exit', { taskId, code, durationMs })
+  });
+  ipcMain.handle('queue:run', (_e, id: string, cwd: string) => taskRunner.run(id, cwd));
+  ipcMain.handle('queue:kill', (_e, id: string) => taskRunner.kill(id));
+  ipcMain.handle('queue:output', (_e, id: string) => taskRunner.getOutput(id));
+  ipcMain.handle('queue:running', () => taskRunner.listRunning());
+
   // HTTP API for the MCP bridge (stdio bridge in scripts/mcp-bridge.cjs).
   const defaultCwd = path.dirname(FramePaths.all().root);
   api = new ApiServer({
@@ -235,4 +246,5 @@ app.on('will-quit', () => {
   coordinator?.dispose();
   hookListener?.dispose();
   api?.dispose();
+  taskRunner?.disposeAll();
 });

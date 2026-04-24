@@ -210,17 +210,7 @@ function Queue() {
       <div className="queue-list">
         {visible.length === 0 && <div className="muted">queue is empty — add your first task above</div>}
         {visible.map((t) => (
-          <div key={t.id} className={`queue-row status-${t.status}`}>
-            <button
-              className={`queue-check status-${t.status}`}
-              onClick={() => void cycleStatus(t)}
-              title={`cycle: pending → in-progress → done · current: ${t.status}`}
-            >
-              {t.status === 'done' ? '✓' : t.status === 'in-progress' ? '◐' : '○'}
-            </button>
-            <span className="queue-title">{t.title}</span>
-            <button className="queue-del" onClick={() => void remove(t.id)} title="delete">×</button>
-          </div>
+          <QueueRow key={t.id} task={t} onCycle={() => cycleStatus(t)} onDelete={() => remove(t.id)} />
         ))}
       </div>
 
@@ -230,6 +220,66 @@ function Queue() {
         </button>
       </div>
     </>
+  );
+}
+
+function QueueRow({ task, onCycle, onDelete }: { task: InternalTask; onCycle(): void | Promise<void>; onDelete(): void | Promise<void> }) {
+  const running = useWorkspace((s) => s.runningTasks.has(task.id));
+  const output = useWorkspace((s) => s.taskOutputs[task.id]);
+  const run = useWorkspace((s) => s.queueRun);
+  const kill = useWorkspace((s) => s.queueKill);
+  const paths = useWorkspace((s) => s.paths);
+  const [showOutput, setShowOutput] = useState(false);
+  const [pickingCwd, setPickingCwd] = useState(false);
+
+  const defaultCwd = paths?.root.replace(/\\frame$/, '') ?? '';
+
+  async function doRun() {
+    if (pickingCwd) return;
+    setPickingCwd(true);
+    try {
+      const picked = await window.frame.app.openFolder();
+      const cwd = picked ?? defaultCwd;
+      if (!cwd) return;
+      await run(task.id, cwd);
+      setShowOutput(true);
+    } finally {
+      setPickingCwd(false);
+    }
+  }
+
+  async function doRunHere() {
+    if (!defaultCwd) return;
+    await run(task.id, defaultCwd);
+    setShowOutput(true);
+  }
+
+  return (
+    <div className={`queue-row status-${task.status} ${running ? 'running' : ''}`}>
+      <div className="queue-row-main">
+        <button className={`queue-check status-${task.status}`} onClick={() => void onCycle()} title={`status: ${task.status}`}>
+          {task.status === 'done' ? '✓' : task.status === 'in-progress' ? '◐' : '○'}
+        </button>
+        <span className="queue-title">{task.title}</span>
+        {output !== undefined && (
+          <button className="queue-toggle-out" onClick={() => setShowOutput((v) => !v)} title="show / hide output">
+            {showOutput ? '▾' : '▸'} out
+          </button>
+        )}
+        {running ? (
+          <button className="queue-action kill" onClick={() => void kill(task.id)} title="stop background task">■ stop</button>
+        ) : task.status !== 'done' ? (
+          <>
+            <button className="queue-action run" onClick={doRunHere} title={`run background claude in ${defaultCwd}`}>▶ here</button>
+            <button className="queue-action run subtle" onClick={doRun} title="pick folder and run">▶…</button>
+          </>
+        ) : null}
+        <button className="queue-del" onClick={() => void onDelete()} title="delete">×</button>
+      </div>
+      {showOutput && output !== undefined && (
+        <pre className="queue-output">{output || (running ? 'waiting for output…' : 'no output yet')}</pre>
+      )}
+    </div>
   );
 }
 

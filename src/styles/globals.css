@@ -723,17 +723,60 @@ input:focus { outline: none; border-color: var(--accent); }
 
 .queue-row {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
   padding: 4px 6px;
   background: var(--bg-2);
   border-left: 2px solid var(--fg-mute);
   border-radius: 2px;
   font-size: 11px;
 }
+.queue-row-main { display: flex; align-items: center; gap: 6px; }
 .queue-row.status-pending     { border-left-color: var(--accent-2); }
 .queue-row.status-in-progress { border-left-color: var(--busy); background: rgba(192, 142, 255, 0.06); }
 .queue-row.status-done        { border-left-color: var(--accent); opacity: 0.55; }
+.queue-row.running            { box-shadow: 0 0 10px rgba(192, 142, 255, 0.25); }
+
+.queue-action {
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  color: var(--fg-dim);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.queue-action.run { color: var(--accent); border-color: var(--accent); }
+.queue-action.run:hover { box-shadow: 0 0 6px var(--accent); }
+.queue-action.run.subtle { color: var(--fg-dim); border-color: var(--line); }
+.queue-action.kill { color: var(--err); border-color: var(--err); }
+.queue-action.kill:hover { box-shadow: 0 0 6px var(--err); }
+
+.queue-toggle-out {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg-mute);
+  font-size: 10px;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+.queue-toggle-out:hover { color: var(--fg); border-color: var(--line); }
+
+.queue-output {
+  margin: 0;
+  padding: 6px 8px;
+  background: var(--bg-0);
+  border: 1px solid var(--line-soft);
+  border-radius: 2px;
+  color: var(--fg-dim);
+  font-size: 10px;
+  line-height: 1.4;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
 
 .queue-check {
   width: 22px;

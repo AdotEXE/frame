@@ -29,6 +29,10 @@ interface WorkspaceState {
   queueAdd(title: string, notes?: string): Promise<void>;
   queueUpdate(id: string, patch: Partial<InternalTask>): Promise<void>;
   queueRemove(id: string): Promise<void>;
+  queueRun(id: string, cwd: string): Promise<{ ok: boolean; error?: string }>;
+  queueKill(id: string): Promise<void>;
+  runningTasks: Set<string>;
+  taskOutputs: Record<string, string>;
 }
 
 const STATUS_BUSY_MS = 4000;
@@ -43,6 +47,8 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   cost: null,
   tasks: null,
   queue: [],
+  runningTasks: new Set(),
+  taskOutputs: {},
   panel: 'dashboard',
   paths: null,
 
@@ -200,5 +206,61 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   async queueRemove(id) {
     await window.frame.queue.remove(id);
     await get().refreshQueue();
+  },
+
+  async queueRun(id, cwd) {
+    const r = await window.frame.queue.run(id, cwd);
+    if (r.ok) {
+      set((s) => {
+        const next = new Set(s.runningTasks);
+        next.add(id);
+        return {
+          runningTasks: next,
+          taskOutputs: { ...s.taskOutputs, [id]: '' }
+        };
+      });
+      await get().refreshQueue();
+      useNotifications.getState().push({
+        kind: 'info',
+        title: 'background task started',
+        body: cwd
+      });
+      return { ok: true };
+    }
+    useNotifications.getState().push({ kind: 'error', title: 'failed to start task', body: r.error });
+    return { ok: false, error: r.error };
+  },
+
+  async queueKill(id) {
+    await window.frame.queue.kill(id);
+    set((s) => {
+      const next = new Set(s.runningTasks);
+      next.delete(id);
+      return { runningTasks: next };
+    });
+    await get().refreshQueue();
+    useNotifications.getState().push({ kind: 'info', title: 'task killed' });
   }
 }));
+
+// Subscribe to runner events at module level — fired once, updates store as events flow.
+if (typeof window !== 'undefined' && window.frame) {
+  window.frame.queue.onOutput(({ taskId, chunk }) => {
+    useWorkspace.setState((s) => ({
+      taskOutputs: { ...s.taskOutputs, [taskId]: (s.taskOutputs[taskId] ?? '') + chunk }
+    }));
+  });
+  window.frame.queue.onExit(({ taskId, code, durationMs }) => {
+    useWorkspace.setState((s) => {
+      const next = new Set(s.runningTasks);
+      next.delete(taskId);
+      return { runningTasks: next };
+    });
+    void useWorkspace.getState().refreshQueue();
+    useNotifications.getState().push({
+      kind: code === 0 ? 'success' : 'warning',
+      title: code === 0 ? 'background task done' : `task exited ${code}`,
+      body: `${(durationMs / 1000).toFixed(1)}s`
+    });
+  });
+}
